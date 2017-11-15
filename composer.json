@@ -1,6 +1,7 @@
 {
 	"name": "espocrm/espocrm",
 	"type": "project",
+	"version": "3.8.5",
 	"require": {
 		"php": ">=5.5.0",
 		"doctrine/dbal": "2.*",
