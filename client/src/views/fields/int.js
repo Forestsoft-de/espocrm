@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -31,6 +31,8 @@ Espo.define('views/fields/int', 'views/fields/base', function (Dep) {
     return Dep.extend({
 
         type: 'int',
+
+        listTemplate: 'fields/int/list',
 
         detailTemplate: 'fields/int/detail',
 
@@ -158,14 +160,14 @@ Espo.define('views/fields/int', 'views/fields/base', function (Dep) {
             } else {
                 if (minValue !== null) {
                     if (value < minValue) {
-                        var msg = this.translate('fieldShouldBeLess', 'messages').replace('{field}', this.translate(this.name, 'fields', this.model.name))
+                        var msg = this.translate('fieldShouldBeGreater', 'messages').replace('{field}', this.translate(this.name, 'fields', this.model.name))
                                                                                  .replace('{value}', minValue);
                         this.showValidationMessage(msg);
                         return true;
                     }
                 } else if (maxValue !== null) {
                     if (value > maxValue) {
-                        var msg = this.translate('fieldShouldBeGreater', 'messages').replace('{field}', this.translate(this.name, 'fields', this.model.name))
+                        var msg = this.translate('fieldShouldBeLess', 'messages').replace('{field}', this.translate(this.name, 'fields', this.model.name))
                                                                                     .replace('{value}', maxValue);
                         this.showValidationMessage(msg);
                         return true;

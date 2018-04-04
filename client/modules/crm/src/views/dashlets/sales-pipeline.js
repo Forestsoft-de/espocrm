@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -38,7 +38,12 @@ Espo.define('crm:views/dashlets/sales-pipeline', 'crm:views/dashlets/abstract/ch
         },
 
         url: function () {
-            return 'Opportunity/action/reportSalesPipeline?dateFrom=' + this.getOption('dateFrom') + '&dateTo=' + this.getOption('dateTo');
+            var url = 'Opportunity/action/reportSalesPipeline?dateFilter='+ this.getDateFilter();
+
+            if (this.getDateFilter() === 'between') {
+                url += '&dateFrom=' + this.getOption('dateFrom') + '&dateTo=' + this.getOption('dateTo');
+            }
+            return url;
         },
 
         prepareData: function (response) {
@@ -64,79 +69,30 @@ Espo.define('crm:views/dashlets/sales-pipeline', 'crm:views/dashlets/abstract/ch
                 });
             }
 
-            this.maxY = 1000;
+            var max = 0;
             if (d.length) {
-                for (var i = 0; i < d.length; i++) {
-                    var y = d[i].value + (d[i].value / 20);
-                    if (y > this.maxY) {
-                        this.maxY = y;
+                d.forEach(function (item) {
+                    if ( item.value && item.value > max) {
+                        max = item.value;
                     }
-                }
-
+                }, this);
             }
+            this.max = max;
 
             return data;
         },
 
         setup: function () {
             this.currency = this.getConfig().get('defaultCurrency');
-            this.currencySymbol = '';
-
-            var data = [
-                {
-                    value: 12000,
-                    stage: 'Prospecting'
-                },
-                {
-                    value: 5050,
-                    stage: 'Qualification'
-                },
-                {
-                    value: 4050,
-                    stage: 'Needs Analysis'
-                },
-                {
-                    value: 3230,
-                    stage: 'Value Proposition'
-                },
-                {
-                    value: 2000,
-                    stage: 'Proposal/Price Quote'
-                },
-                {
-                    value: 1200.5,
-                    stage: 'Negotiation/Review'
-                },
-                {
-                    value: 700,
-                    stage: 'Closed Won'
-                },
-            ];
+            this.currencySymbol = this.getMetadata().get(['app', 'currency', 'symbolMap', this.currency]) || '';
 
             this.chartData = [];
-
-            for (var i = 0; i < data.length; i++) {
-                var item = data[i];
-                var value = item.value;
-                var nextValue = ((i + 1) < data.length) ? data[i + 1].value : value;
-                var o = {
-                    data: [[i, value], [i + 1, nextValue]],
-                    label: item.stage
-                };
-
-                this.chartData.push(o);
-            }
-
-            this.maxY = 1000;
-            if (data.length) {
-                this.maxY = data[0].value + (data[0].value / 20);
-            }
         },
 
-        drow: function () {
+        draw: function () {
             var self = this;
 
-            var colors = Espo.Utils.clone(this.colors);
+            var colors = Espo.Utils.clone(this.colorList);
 
             this.chartData.forEach(function (item, i) {
                 if (i + 1 > colors.length) {
@@ -154,46 +110,53 @@ Espo.define('crm:views/dashlets/sales-pipeline', 'crm:views/dashlets/abstract/ch
                 lines: {
                     show: true,
                     fill: true,
-                    fillOpacity: 1,
+                    fillOpacity: 1
                 },
                 points: {
-                    show: true,
+                    show: true
                 },
                 grid: {
-                    horizontalLines: false,
-                    outline: 'sw',
-                    color: this.outlineColor
+                    color: this.tickColor,
+                    verticalLines: false,
+                    outline: 'ew',
+                    tickColor: this.tickColor
                 },
                 yaxis: {
                     min: 0,
-                    max: this.maxY,
-                    showLabels: false,
+                    max: this.max + 0.08 * this.max,
+                    showLabels: false
                 },
                 xaxis: {
                     min: 0,
-                    showLabels: false,
+                    showLabels: false
                 },
                 mouse: {
                     track: true,
                     relative: true,
                     position: 'ne',
+                    lineColor: this.hoverColor,
                     trackFormatter: function (obj) {
                         if (obj.x >= self.chartData.length) {
                             return null;
                         }
-                        return self.formatNumber(obj.y) + ' ' + self.currency;
-                    },
+                        var label = self.chartData[parseInt(obj.x)].label;
+                        var label = (label || self.translate('None'));
+                        return label  + ':<br>' + self.currencySymbol + self.formatNumber(obj.y, true);
+                    }
                 },
                 legend: {
                     show: true,
-                    noColumns: 5,
+                    noColumns: this.getLegendColumnNumber(),
                     container: this.$el.find('.legend-container'),
-                    labelBoxMargin: 0
-                },
+                    labelBoxMargin: 0,
+                    labelFormatter: self.labelFormatter.bind(self),
+                    labelBoxBorderColor: 'transparent',
+                    backgroundOpacity: 0
+                }
             });
-        },
+
+            this.adjustLegend();
+        }
 
     });
 });
-
-

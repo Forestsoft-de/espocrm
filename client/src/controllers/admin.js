@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -164,6 +164,21 @@ Espo.define('controllers/admin', ['controller', 'search-manager'], function (Dep
 
                 this.main('views/admin/auth-token/list', {
                     scope: 'AuthToken',
+                    collection: collection,
+                    searchManager: searchManager
+                });
+            }, this);
+        },
+
+        authLog: function () {
+            this.collectionFactory.create('AuthLogRecord', function (collection) {
+                var searchManager = new SearchManager(collection, 'list', this.getStorage(), this.getDateTime());
+                searchManager.loadStored();
+                collection.where = searchManager.getWhere();
+                collection.maxSize = this.getConfig().get('recordsPerPage') || collection.maxSize;
+
+                this.main('views/admin/auth-log-record/list', {
+                    scope: 'AuthLogRecord',
                     collection: collection,
                     searchManager: searchManager
                 });

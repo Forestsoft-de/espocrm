@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -34,6 +34,8 @@ Espo.define('views/user/record/edit', ['views/record/edit', 'views/user/record/d
 
         setup: function () {
             Dep.prototype.setup.call(this);
+
+            this.setupNonAdminFieldsAccess();
 
             if (this.model.id == this.getUser().id) {
                 this.listenTo(this.model, 'after:save', function () {
@@ -77,6 +79,10 @@ Espo.define('views/user/record/edit', ['views/record/edit', 'views/user/record/d
             }, this);
         },
 
+        setupNonAdminFieldsAccess: function () {
+            Detail.prototype.setupNonAdminFieldsAccess.call(this);
+        },
+
         controlFieldAppearance: function () {
             Detail.prototype.controlFieldAppearance.call(this);
         },
@@ -103,7 +109,7 @@ Espo.define('views/user/record/edit', ['views/record/edit', 'views/user/record/d
                     ]
                 });
 
-                if (this.type == 'edit') {
+                if (this.type == 'edit' && this.getUser().isAdmin()) {
                     layout.push({
                         label: 'Password',
                         rows: [
@@ -185,9 +191,12 @@ Espo.define('views/user/record/edit', ['views/record/edit', 'views/user/record/d
             }
 
             return data;
+        },
+
+        errorHandlerUserNameExists: function () {
+            Espo.Ui.error(this.translate('userNameExists', 'messages', 'User'))
         }
 
     });
 
 });
-

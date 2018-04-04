@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -177,34 +177,31 @@ Espo.define('views/role/record/table', 'view', function (Dep) {
                             }
                         }
 
-                        var level = 'all';
+                        var level = 'no';
                         if (~this.booleanActionList.indexOf(action)) {
-                            level = 'yes';
+                            level = 'no';
                         }
                         if (scope in aclData) {
                             if (access == 'enabled') {
                                 if (aclData[scope] !== true) {
                                     if (action in aclData[scope]) {
                                         level = aclData[scope][action];
-                                    } else {
-                                        // TODO remove it
-                                        if (~this.booleanActionList.indexOf(action)) {
-                                            level = 'yes';
-                                        } else {
-                                            if (j > 0) {
-                                                level = (list[j - 1] || {}).level;
-                                            }
-                                        }
                                     }
                                 }
                             } else {
                                 level = 'no';
                             }
                         }
-                        var levelList = this.getMetadata().get(['scopes', scope, this.type + 'LevelList']) || this.levelListMap[type] || [];
+                        var levelList =
+                            this.getMetadata().get(['scopes', scope, this.type + 'ActionLevelListMap', action]) ||
+                            this.getMetadata().get(['scopes', scope, this.type + 'LevelList']) ||
+                            this.levelListMap[type] ||
+                            [];
+
                         if (~this.booleanActionList.indexOf(action)) {
                             levelList = this.booleanLevelList;
                         }
+
                         list.push({
                             level: level,
                             name: scope + '-' + action,
@@ -512,7 +509,8 @@ Espo.define('views/role/record/table', 'view', function (Dep) {
 
             this.createView('addField', 'views/role/modals/add-field', {
                 scope: scope,
-                ignoreFieldList: ignoreFieldList
+                ignoreFieldList: ignoreFieldList,
+                type: this.type
             }, function (view) {
                 view.render();
 

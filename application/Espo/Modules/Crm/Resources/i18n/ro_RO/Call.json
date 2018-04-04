@@ -1,39 +1,50 @@
 {
-    "fields": {
-        "name": "Nume",
-        "parent": "Parinte",
-        "status": "Status",
-        "dateStart": "Data inceput",
-        "dateEnd": "Data terminare",
-        "direction": "Directie",
-        "duration": "Durata",
-        "description": "Descriere",
-        "users": "Utilizatori",
-        "contacts": "Contacte",
-        "leads": "Lead-uri"
+  "fields": {
+    "name": "Nume",
+    "parent": "Părinte",
+    "status": "Stare",
+    "dateStart": "Dată început",
+    "dateEnd": "Dată terminare",
+    "direction": "Direcție",
+    "duration": "Durată",
+    "description": "Descriere",
+    "users": "Utilizatori",
+    "contacts": "Contacte",
+    "leads": "Lead-uri",
+    "reminders": "Mementouri",
+    "account": "Cont",
+    "acceptanceStatus": "Starea de acceptare"
+  },
+  "options": {
+    "status": {
+      "Planned": "Planificat",
+      "Held": "Reținut",
+      "Not Held": "Nereșinut"
     },
-    "links": {
+    "direction": {
+      "Outbound": "Ieșire",
+      "Inbound": "Intrare"
     },
-    "options": {
-        "status": {
-            "Planned": "Planificat",
-            "Held": "Detinut",
-            "Not Held": "Nedetinut"
-        },
-        "direction": {
-            "Outbound": "Iesire",
-            "Inbound": "Intrare"
-        }
-    },
-    "labels": {
-        "Create Call": "Creare Apelare",
-        "Set Held": "Setare detinere",
-        "Set Not Held": "Setare nedetinere",
-        "Send Invitations": "Trimite invitatii"        
-    },
-    "presetFilters": {
-        "planned": "Planificat",
-        "held": "Detinut",
-        "todays": "Today's"
+    "acceptanceStatus": {
+      "None": "Nici unul",
+      "Accepted": "Acceptat",
+      "Declined": "Respins",
+      "Tentative": "Tentativă"
     }
+  },
+  "massActions": {
+    "setHeld": "Setează ca reținut",
+    "setNotHeld": "Setează ca nereținut"
+  },
+  "labels": {
+    "Create Call": "Creare Apelare",
+    "Set Held": "Setează ca reținut",
+    "Set Not Held": "Setează ca nereținut",
+    "Send Invitations": "Trimite invitații"
+  },
+  "presetFilters": {
+    "planned": "Planificat",
+    "held": "Reținut",
+    "todays": "Azi"
+  }
 }

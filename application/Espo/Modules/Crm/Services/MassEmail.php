@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -39,7 +39,7 @@ class MassEmail extends \Espo\Services\Record
 {
     const MAX_ATTEMPT_COUNT = 3;
 
-    const MAX_PER_HOUR_COUNT = 100;
+    const MAX_PER_HOUR_COUNT = 10000;
 
     private $campaignService = null;
 
@@ -62,17 +62,17 @@ class MassEmail extends \Espo\Services\Record
         return $this->getInjection('language');
     }
 
-    protected function beforeCreate(Entity $entity, array $data = array())
+    protected function beforeCreateEntity(Entity $entity, $data)
     {
-        parent::beforeCreate($entity, $data);
+        parent::beforeCreateEntity($entity, $data);
         if (!$this->getAcl()->check($entity, 'edit')) {
             throw new Forbidden();
         }
     }
 
-    protected function afterRemove(Entity $massEmail, array $data = array())
+    protected function afterDeleteEntity(Entity $massEmail)
     {
-        parent::afterRemove($massEmail, $data);
+        parent::afterDeleteEntity($massEmail);
         $existingQueueItemList = $this->getEntityManager()->getRepository('EmailQueueItem')->where(array(
             'status' => ['Pending', 'Failed'],
             'massEmailId' => $massEmail->id
@@ -309,8 +309,33 @@ class MassEmail extends \Espo\Services\Record
         }
         $attachmentList = $emailTemplate->get('attachments');
 
+        $smtpParams = null;
+
+        if ($massEmail->get('inboundEmailId')) {
+            $inboundEmail = $this->getEntityManager()->getEntity('InboundEmail', $massEmail->get('inboundEmailId'));
+            if (!$inboundEmail) {
+                throw new Error("Group Email Account '".$massEmail->get('inboundEmailId')."' is not available.");
+            }
+
+            if (
+                $inboundEmail->get('status') !== 'Active'
+                ||
+                !$inboundEmail->get('useSmtp')
+                ||
+                !$inboundEmail->get('smtpIsForMassEmail')
+            ) {
+                throw new Error("Group Email Account '".$massEmail->get('inboundEmailId')."' can't be used for Mass Email.");
+            }
+
+            $inboundEmailService = $this->getServiceFactory()->create('InboundEmail');
+            $smtpParams = $inboundEmailService->getSmtpParamsFromAccount($inboundEmail);
+            if (!$smtpParams) {
+                throw new Error("Group Email Account '".$massEmail->get('inboundEmailId')."' has no SMTP params.");
+            }
+        }
+
         foreach ($queueItemList as $queueItem) {
-            $this->sendQueueItem($queueItem, $massEmail, $emailTemplate, $attachmentList, $campaign, $isTest);
+            $this->sendQueueItem($queueItem, $massEmail, $emailTemplate, $attachmentList, $campaign, $isTest, $smtpParams);
         }
 
         if (!$isTest) {
@@ -390,7 +415,7 @@ class MassEmail extends \Espo\Services\Record
         return $email;
     }
 
-    protected function sendQueueItem(Entity $queueItem, Entity $massEmail, Entity $emailTemplate, $attachmentList = [], $campaign = null, $isTest = false)
+    protected function sendQueueItem(Entity $queueItem, Entity $massEmail, Entity $emailTemplate, $attachmentList = [], $campaign = null, $isTest = false, $smtpParams = false)
     {
         $queueItemFetched = $this->getEntityManager()->getEntity($queueItem->getEntityType(), $queueItem->id);
         if ($queueItemFetched->get('status') !== 'Pending') {
@@ -458,11 +483,20 @@ class MassEmail extends \Espo\Services\Record
                 $message->getHeaders()->addHeaderLine('List-Unsubscribe', '<' . $optOutUrl . '>');
             }
 
-            $this->getMailSender()->useGlobal()->send($email, $params, $message, $attachmentList);
+            $sender = $this->getMailSender();
+
+            if ($smtpParams) {
+                $sender->useSmtp($smtpParams);
+            } else {
+                $sender->useGlobal();
+            }
+
+            $sender->send($email, $params, $message, $attachmentList);
 
             $isSent = true;
         } catch (\Exception $e) {
-            if ($queueItem->get('attemptCount') >= self::MAX_ATTEMPT_COUNT) {
+            $maxAttemptCount = $this->getConfig()->get('massEmailMaxAttemptCount', self::MAX_ATTEMPT_COUNT);
+            if ($queueItem->get('attemptCount') >= $maxAttemptCount) {
                 $queueItem->set('status', 'Failed');
             } else {
                 $queueItem->set('status', 'Pending');
@@ -542,5 +576,32 @@ class MassEmail extends \Espo\Services\Record
         );
     }
 
-}
+    public function getSmtpAccountDataList()
+    {
+        if (!$this->getAcl()->checkScope('MassEmail', 'create') && !$this->getAcl()->checkScope('MassEmail', 'edit')) {
+            throw new Forbidden();
+        }
+        $dataList = [];
 
+        $inboundEmailList = $this->getEntityManager()->getRepository('InboundEmail')->where([
+            'useSmtp' => true,
+            'status' => 'Active',
+            'smtpIsForMassEmail' => true,
+            'emailAddress!=' => '',
+            'emailAddress!=' => null
+        ])->find();
+
+        foreach ($inboundEmailList as $inboundEmail) {
+            $item = (object) [];
+            $key = 'inboundEmail:' . $inboundEmail->id;
+            $item->key = $key;
+            $item->emailAddress = $inboundEmail->get('emailAddress');
+            $item->fromName = $inboundEmail->get('fromName');
+
+            $dataList[] = $item;
+        }
+
+        return $dataList;
+    }
+
+}

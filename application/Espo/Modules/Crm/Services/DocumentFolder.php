@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -33,26 +33,8 @@ use \Espo\ORM\Entity;
 
 class DocumentFolder extends \Espo\Services\RecordTree
 {
+    protected $subjectEntityType = 'Document';
 
-    protected function checkFilterOnlyNotEmpty()
-    {
-        if (!$this->getAcl()->checkScope('Document', 'create')) {
-            return true;
-        }
-    }
+    protected $categoryField = 'folder';
 
-    protected function checkItemIsEmpty(Entity $entity)
-    {
-        $selectManager = $this->getSelectManager('Document');
-
-        $selectParams = $selectManager->getEmptySelectParams();
-        $selectManager->applyInCategory('folder', $entity->id, $selectParams);
-        $selectManager->applyAccess($selectParams);
-
-        if ($this->getEntityManager()->getRepository('Document')->findOne($selectParams)) {
-            return false;
-        }
-        return true;
-    }
 }
-

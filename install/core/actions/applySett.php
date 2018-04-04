@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -32,21 +32,21 @@ $result = array('success' => true, 'errorMsg' => '');
 
 // save settings
 $data = array(
-	'driver' => 'pdo_mysql',
-	'dbname' => $_SESSION['install']['db-name'],
-	'user' => $_SESSION['install']['db-user-name'],
-	'password' => $_SESSION['install']['db-user-password'],
+    'driver' => 'pdo_mysql',
+    'dbname' => $_SESSION['install']['db-name'],
+    'user' => $_SESSION['install']['db-user-name'],
+    'password' => $_SESSION['install']['db-user-password'],
 );
 $host = $_SESSION['install']['host-name'];
 if (strpos($host,':') === false) {
-		$host .= ":";
+        $host .= ":";
 }
 list($data['host'], $data['port']) = explode(':', $host);
 
 $lang = (!empty($_SESSION['install']['user-lang']))? $_SESSION['install']['user-lang'] : 'en_US';
 if (!$installer->saveData($data, $lang)) {
-	$result['success'] = false;
-	$result['errorMsg'] = $langs['messages']['Can not save settings'];
+    $result['success'] = false;
+    $result['errorMsg'] = $langs['messages']['Can not save settings'];
 }
 
 ob_clean();

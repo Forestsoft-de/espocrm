@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -37,14 +37,14 @@ class MassEmail extends \Espo\Core\Controllers\Record
 {
     public function postActionSendTest($params, $data)
     {
-        if (empty($data['id']) || empty($data['targetList']) || !is_array($data['targetList'])) {
+        if (empty($data->id) || empty($data->targetList) || !is_array($data->targetList)) {
             throw new BadRequest();
         }
 
-        $id = $data['id'];
+        $id = $data->id;
 
         $targetList = [];
-        foreach ($data['targetList'] as $item) {
+        foreach ($data->targetList as $item) {
             if (empty($item->id) || empty($item->type)) continue;
             $targetId = $item->id;
             $targetType = $item->type;
@@ -67,5 +67,14 @@ class MassEmail extends \Espo\Core\Controllers\Record
         $this->getRecordService()->createQueue($massEmail, true, $targetList);
         $this->getRecordService()->processSending($massEmail, true);
         return true;
+    }
+
+    public function getActionSmtpAccountDataList()
+    {
+        if (!$this->getAcl()->checkScope('MassEmail', 'create') && !$this->getAcl()->checkScope('MassEmail', 'edit')) {
+            throw new Forbidden();
+        }
+
+        return $this->getServiceFactory()->create('MassEmail')->getSmtpAccountDataList();
     }
 }

@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -96,7 +96,11 @@ class Sender
             'connection_config' => array()
         );
         if ($params['auth']) {
-            $opts['connection_class'] = 'login';
+            if (!empty($params['smtpAuthMechanism'])) {
+                $opts['connection_class'] = $params['smtpAuthMechanism'];
+            } else {
+                $opts['connection_class'] = 'login';
+            }
             $opts['connection_config']['username'] = $params['username'];
             $opts['connection_config']['password'] = $params['password'];
         }
@@ -135,7 +139,7 @@ class Sender
             'connection_config' => array()
         );
         if ($config->get('smtpAuth')) {
-            $opts['connection_class'] = 'login';
+            $opts['connection_class'] = $config->get('smtpAuthMechanism', 'login');
             $opts['connection_config']['username'] = $config->get('smtpUsername');
             $opts['connection_config']['password'] = $config->get('smtpPassword');
         }
@@ -345,7 +349,7 @@ class Sender
 
         try {
             $messageId = $email->get('messageId');
-            if (empty($messageId) || !is_string($messageId) || strlen($messageId) < 4) {
+            if (empty($messageId) || !is_string($messageId) || strlen($messageId) < 4 || strpos($messageId, 'dummy:') === 0) {
                 $messageId = $this->generateMessageId($email);
                 $email->set('messageId', '<' . $messageId . '>');
             } else {

@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -56,7 +56,6 @@ class EventConfirmation extends \Espo\Core\EntryPoints\Base
 
         if (!$uniqueId) {
             throw new NotFound();
-            return;
         }
 
         $data = $uniqueId->get('data');
@@ -70,36 +69,55 @@ class EventConfirmation extends \Espo\Core\EntryPoints\Base
         if (!empty($eventType) && !empty($eventId) && !empty($inviteeType) && !empty($inviteeId) && !empty($link)) {
             $event = $this->getEntityManager()->getEntity($eventType, $eventId);
             $invitee = $this->getEntityManager()->getEntity($inviteeType, $inviteeId);
-            if ($event && $invitee) {
-                $relDefs = $event->getRelations();
-                $tableName = Util::toUnderscore($relDefs[$link]['relationName']);
 
-                $status = 'None';
-                if ($action == 'accept') {
-                    $status = 'Accepted';
-                } else if ($action == 'decline') {
-                    $status = 'Declined';
-                } else if ($action == 'tentative') {
-                    $status = 'Tentative';
-                }
-
-                $pdo = $this->getEntityManager()->getPDO();
-                $sql = "
-                    UPDATE `{$tableName}` SET status = '{$status}'
-                    WHERE ".strtolower($eventType)."_id = '{$eventId}' AND ".strtolower($inviteeType)."_id = '{$inviteeId}'
-                ";
-
-                $sth = $pdo->prepare($sql);
-                $sth->execute();
-
-                $this->getEntityManager()->getRepository('UniqueId')->remove($uniqueId);
-
-                echo $status;
-                return;
+            if (!$event || !$invitee) {
+                throw new NotFound();
             }
+
+            if ($event->get('status') === 'Held' || $event->get('status') === 'Not Held') {
+                throw new NotFound();
+            }
+
+            $status = 'None';
+            $hookMethodName = 'afterConfirmation';
+            if ($action == 'accept') {
+                $status = 'Accepted';
+            } else if ($action == 'decline') {
+                $status = 'Declined';
+            } else if ($action == 'tentative') {
+                $status = 'Tentative';
+            }
+
+            $data = (object) [
+                'status' => $status
+            ];
+            $this->getEntityManager()->getRepository($eventType)->updateRelation($event, $link, $invitee->id, $data);
+
+            $actionData = [
+                'eventName' => $event->get('name'),
+                'eventType' => $event->getEntityType(),
+                'eventId' => $event->id,
+                'dateStart' => $event->get('dateStart'),
+                'action' => $action,
+                'status' => $status,
+                'link' => $link,
+                'inviteeType' => $invitee->getEntityType(),
+                'inviteeId' => $invitee->id
+            ];
+
+            $this->getEntityManager()->getHookManager()->process($event->getEntityType(), $hookMethodName, $event, [], $actionData);
+
+            $runScript = "
+                Espo.require('crm:controllers/event-confirmation', function (Controller) {
+                    var controller = new Controller(app.baseController.params, app.getControllerInjection());
+                    controller.masterView = app.masterView;
+                    controller.doAction('confirmEvent', ".json_encode($actionData).");
+                });
+            ";
+
+            $this->getClientManager()->display($runScript);
         }
 
         throw new Error();
     }
 }
-

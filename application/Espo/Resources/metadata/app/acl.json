@@ -64,26 +64,76 @@
             "Attachment": {
                 "parent": false
             },
-            "User": {
-                "gender": false
-            },
             "EmailFolder": {
                 "assignedUser": false
             },
             "Email": {
                 "inboundEmails": false,
                 "emailAccounts": false
+            },
+            "User": {
+                "password": false,
+                "passwordConfirm": false
             }
         }
     },
     "default": {
         "scopeLevel": {
+            "User": {
+                "read": "all",
+                "edit": "no"
+            }
         },
         "fieldLevel": {
         },
+        "scopeFieldLevel": {
+            "User": {
+                "gender": false
+            }
+        }
+    },
+    "strictDefault": {
+        "scopeLevel": {
+            "User": {
+                "read": "own",
+                "edit": "no"
+            }
+        },
+        "fieldLevel": {
+        },
+        "scopeFieldLevel": {
+            "User": {
+                "gender": false
+            }
+        }
+    },
+    "valuePermissionList": [
+        "assignmentPermission",
+        "userPermission",
+        "portalPermission",
+        "groupEmailAccountPermission",
+        "exportPermission"
+    ],
+    "valuePermissionHighestLevels": {
         "assignmentPermission": "all",
         "userPermission": "all",
-        "portalPermission": "no"
+        "portalPermission": "yes",
+        "groupEmailAccountPermission": "all",
+        "exportPermission": "yes"
+    },
+    "permissionsDefaults": {
+        "assignmentPermission": "all",
+        "userPermission": "all",
+        "portalPermission": "no",
+        "groupEmailAccountPermission": "no",
+        "exportPermission": "yes"
+    },
+    "permissionsStrictDefaults": {
+        "assignmentPermission": "no",
+        "userPermission": "no",
+        "portalPermission": "no",
+        "groupEmailAccountPermission": "no",
+        "exportPermission": "no"
     },
     "scopeLevelTypesDefaults": {
         "boolean": true,

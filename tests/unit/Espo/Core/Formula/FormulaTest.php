@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@ namespace tests\unit\Espo\Core\Formula;
 
 use \Espo\ORM\Entity;
 
-class FormulaTest extends \PHPUnit_Framework_TestCase
+class FormulaTest extends \PHPUnit\Framework\TestCase
 {
 
     protected function setUp()
@@ -49,6 +49,16 @@ class FormulaTest extends \PHPUnit_Framework_TestCase
 
         $this->dateTime = new \Espo\Core\Utils\DateTime();
 
+        $this->number = new \Espo\Core\Utils\NumberUtil();
+
+        $this->config = $this->getMockBuilder('\\Espo\\Core\\Utils\\Config')->disableOriginalConstructor()->getMock();
+        $this->config
+            ->expects($this->any())
+            ->method('get')
+            ->will($this->returnValueMap([
+                ['timeZone', null, 'UTC']
+            ]));
+
         $this->user = new \tests\unit\testData\Entities\User();
 
         $this->user->id = '1';
@@ -59,6 +69,8 @@ class FormulaTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValueMap([
                 ['entityManager', $this->entityManager],
                 ['dateTime', $this->dateTime],
+                ['number', $this->number],
+                ['config', $this->config],
                 ['user', $this->user]
             ]));
     }
@@ -71,6 +83,7 @@ class FormulaTest extends \PHPUnit_Framework_TestCase
         $this->entity = null;
         $this->entityManager = null;
         $this->repository = null;
+        $this->config = null;
     }
 
     protected function getEntityMock()
@@ -264,6 +277,74 @@ class FormulaTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($result);
     }
 
+    function testAddLinkMultipleId()
+    {
+        $item = json_decode('
+            {
+                "type": "entity\\\\addLinkMultipleId",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "teams"
+                    },
+                    {
+                        "type": "value",
+                        "value": "1"
+                    }
+                ]
+            }
+        ');
+
+        $entity = $this->entity;
+
+        $this->setEntityAttributes($entity, array(
+            'teamsIds' => ['2']
+        ));
+
+        $entity
+            ->expects($this->any())
+            ->method('addLinkMultipleId')
+            ->with('teams', '1');
+
+        $this->formula->process($item, $this->entity);
+
+        $this->assertTrue(true);
+    }
+
+    function testRemoveLinkMultipleId()
+    {
+        $item = json_decode('
+            {
+                "type": "entity\\\\removeLinkMultipleId",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "teams"
+                    },
+                    {
+                        "type": "value",
+                        "value": "1"
+                    }
+                ]
+            }
+        ');
+
+        $entity = $this->entity;
+
+        $this->setEntityAttributes($entity, array(
+            'teamsIds' => ['1', '2']
+        ));
+
+        $entity
+            ->expects($this->any())
+            ->method('removeLinkMultipleId')
+            ->with('teams', '1');
+
+        $this->formula->process($item, $this->entity);
+
+        $this->assertTrue(true);
+    }
+
     function testAnd()
     {
         $item = json_decode('
@@ -453,6 +534,80 @@ class FormulaTest extends \PHPUnit_Framework_TestCase
         $result = $this->formula->process($item, $this->entity);
 
         $this->assertEquals('Hello Test 12', $result);
+    }
+
+    function testStringLength()
+    {
+        $item = json_decode('
+            {
+                "type": "string\\\\length",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "TestHello"
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals(9, $actual);
+    }
+
+    function testStringContains()
+    {
+        $item = json_decode('
+            {
+                "type": "string\\\\contains",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "TestHello"
+                    },
+                    {
+                        "type": "value",
+                        "value": "Test"
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertTrue($actual);
+
+        $item = json_decode('
+            {
+                "type": "string\\\\contains",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "TestHello"
+                    },
+                    {
+                        "type": "value",
+                        "value": "Hello"
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertTrue($actual);
+
+        $item = json_decode('
+            {
+                "type": "string\\\\contains",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "TestHello"
+                    },
+                    {
+                        "type": "value",
+                        "value": "Hello1"
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertFalse($actual);
     }
 
     function testSummationAndDivision()
@@ -1104,6 +1259,83 @@ class FormulaTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(20, $actual);
     }
 
+    function testNumberCeil()
+    {
+        $item = json_decode('
+            {
+                "type": "number\\\\ceil",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": 20.4
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals(21, $actual);
+    }
+
+    function testNumberFloor()
+    {
+        $item = json_decode('
+            {
+                "type": "number\\\\floor",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": 20.4
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals(20, $actual);
+    }
+
+    function testNumberFormat()
+    {
+        $item = json_decode('
+            {
+                "type": "number\\\\format",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": 20
+                    },
+                    {
+                        "type": "value",
+                        "value": 2
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('20.00', $actual);
+
+        $item = json_decode('
+            {
+                "type": "number\\\\format",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": 20
+                    },
+                    {
+                        "type": "value",
+                        "value": 2
+                    },
+                    {
+                        "type": "value",
+                        "value": ","
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('20,00', $actual);
+    }
+
     function testNumberRound()
     {
         $item = json_decode('
@@ -1226,6 +1458,24 @@ class FormulaTest extends \PHPUnit_Framework_TestCase
         ');
         $actual = $this->formula->process($item);
         $this->assertEquals(0, $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\year",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-12-31 23:00"
+                    },
+                    {
+                        "type": "value",
+                        "value": "Europe/Kiev"
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item);
+        $this->assertEquals(2018, $actual);
     }
 
     function testDatetimeMonth()
@@ -1257,6 +1507,24 @@ class FormulaTest extends \PHPUnit_Framework_TestCase
         ');
         $actual = $this->formula->process($item);
         $this->assertEquals(10, $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\month",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-30 23:15"
+                    },
+                    {
+                        "type": "value",
+                        "value": "Europe/Kiev"
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item);
+        $this->assertEquals(12, $actual);
     }
 
     function testDatetimeDate()
@@ -1288,6 +1556,24 @@ class FormulaTest extends \PHPUnit_Framework_TestCase
         ');
         $actual = $this->formula->process($item);
         $this->assertEquals(20, $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\date",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-10-02 23:15"
+                    },
+                    {
+                        "type": "value",
+                        "value": "Europe/Kiev"
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item);
+        $this->assertEquals(3, $actual);
     }
 
     function testDatetimeHour()
@@ -1319,6 +1605,24 @@ class FormulaTest extends \PHPUnit_Framework_TestCase
         ');
         $actual = $this->formula->process($item);
         $this->assertEquals(0, $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\hour",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-02 14:15"
+                    },
+                    {
+                        "type": "value",
+                        "value": "Europe/Kiev"
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item);
+        $this->assertEquals(16, $actual);
     }
 
     function testDatetimeMinute()
@@ -1350,6 +1654,24 @@ class FormulaTest extends \PHPUnit_Framework_TestCase
         ');
         $actual = $this->formula->process($item);
         $this->assertEquals(0, $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\minute",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-10-02 14:05"
+                    },
+                    {
+                        "type": "value",
+                        "value": "Europe/Kiev"
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item);
+        $this->assertEquals(5, $actual);
     }
 
     function testDatetimeDayOfWeek()
@@ -1409,6 +1731,24 @@ class FormulaTest extends \PHPUnit_Framework_TestCase
         ');
         $actual = $this->formula->process($item);
         $this->assertEquals(5, $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\dayOfWeek",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-05-05 23:15"
+                    },
+                    {
+                        "type": "value",
+                        "value": "Europe/Kiev"
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item);
+        $this->assertEquals(6, $actual);
     }
 
     function testDatetimeDiff()
@@ -1631,6 +1971,570 @@ class FormulaTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('2017-01-01 19:30:00', $actual);
     }
 
+    function testDatetimeClosestTime()
+    {
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16 15:10:00"
+                    },
+                    {
+                        "type": "value",
+                        "value": "time"
+                    },
+                    {
+                        "type": "value",
+                        "value": "16:15"
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-16 16:15', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16 15:10:00"
+                    },
+                    {
+                        "type": "value",
+                        "value": "time"
+                    },
+                    {
+                        "type": "value",
+                        "value": "12:00"
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-17 12:00', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16 15:10"
+                    },
+                    {
+                        "type": "value",
+                        "value": "time"
+                    },
+                    {
+                        "type": "value",
+                        "value": "16:15"
+                    },
+                    {
+                        "type": "value",
+                        "value": true
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-15 16:15', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16 12:00"
+                    },
+                    {
+                        "type": "value",
+                        "value": "time"
+                    },
+                    {
+                        "type": "value",
+                        "value": "16:15"
+                    },
+                    {
+                        "type": "value",
+                        "value": true
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-15 16:15', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16 12:00"
+                    },
+                    {
+                        "type": "value",
+                        "value": "time"
+                    },
+                    {
+                        "type": "value",
+                        "value": "00:00"
+                    },
+                    {
+                        "type": "value",
+                        "value": true
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-16 00:00', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16"
+                    },
+                    {
+                        "type": "value",
+                        "value": "time"
+                    },
+                    {
+                        "type": "value",
+                        "value": "12:00"
+                    },
+                    {
+                        "type": "value",
+                        "value": true
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-15 12:00', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16 12:10"
+                    },
+                    {
+                        "type": "value",
+                        "value": "time"
+                    },
+                    {
+                        "type": "value",
+                        "value": "12:10"
+                    },
+                    {
+                        "type": "value",
+                        "value": true
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-16 12:10', $actual);
+    }
+
+    function testDatetimeClosestHour()
+    {
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16 15:10"
+                    },
+                    {
+                        "type": "value",
+                        "value": "hour"
+                    },
+                    {
+                        "type": "value",
+                        "value": 10
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-17 10:00', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16 15:10"
+                    },
+                    {
+                        "type": "value",
+                        "value": "hour"
+                    },
+                    {
+                        "type": "value",
+                        "value": 10
+                    },
+                    {
+                        "type": "value",
+                        "value": true
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-16 10:00', $actual);
+    }
+
+    function testDatetimeClosestMinute()
+    {
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16 15:10:10"
+                    },
+                    {
+                        "type": "value",
+                        "value": "minute"
+                    },
+                    {
+                        "type": "value",
+                        "value": 10
+                    },
+                    {
+                        "type": "value",
+                        "value": true
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-16 15:10', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16 15:10"
+                    },
+                    {
+                        "type": "value",
+                        "value": "minute"
+                    },
+                    {
+                        "type": "value",
+                        "value": 10
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-16 15:10', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16 15:20"
+                    },
+                    {
+                        "type": "value",
+                        "value": "minute"
+                    },
+                    {
+                        "type": "value",
+                        "value": 10
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-16 16:10', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16 15:20"
+                    },
+                    {
+                        "type": "value",
+                        "value": "minute"
+                    },
+                    {
+                        "type": "value",
+                        "value": 59
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-16 15:59', $actual);
+    }
+
+    function testDatetimeClosestDayOfWeek()
+    {
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16 15:10"
+                    },
+                    {
+                        "type": "value",
+                        "value": "dayOfWeek"
+                    },
+                    {
+                        "type": "value",
+                        "value": 1
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-20 00:00', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16"
+                    },
+                    {
+                        "type": "value",
+                        "value": "dayOfWeek"
+                    },
+                    {
+                        "type": "value",
+                        "value": 1
+                    },
+                    {
+                        "type": "value",
+                        "value": true
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-13', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16 15:10"
+                    },
+                    {
+                        "type": "value",
+                        "value": "dayOfWeek"
+                    },
+                    {
+                        "type": "value",
+                        "value": 0
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-19 00:00', $actual);
+    }
+
+    function testDatetimeClosestDate()
+    {
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16 15:10"
+                    },
+                    {
+                        "type": "value",
+                        "value": "date"
+                    },
+                    {
+                        "type": "value",
+                        "value": 30
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-30 00:00', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-12-16"
+                    },
+                    {
+                        "type": "value",
+                        "value": "date"
+                    },
+                    {
+                        "type": "value",
+                        "value": 31
+                    },
+                    {
+                        "type": "value",
+                        "value": true
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-10-31', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16 15:10"
+                    },
+                    {
+                        "type": "value",
+                        "value": "date"
+                    },
+                    {
+                        "type": "value",
+                        "value": 1
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-12-01 00:00', $actual);
+    }
+
+    function testDatetimeClosestMonth()
+    {
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16"
+                    },
+                    {
+                        "type": "value",
+                        "value": "month"
+                    },
+                    {
+                        "type": "value",
+                        "value": 1
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2018-01-01', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-01"
+                    },
+                    {
+                        "type": "value",
+                        "value": "month"
+                    },
+                    {
+                        "type": "value",
+                        "value": 11
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-01', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-01 10:00"
+                    },
+                    {
+                        "type": "value",
+                        "value": "month"
+                    },
+                    {
+                        "type": "value",
+                        "value": 11
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2018-11-01 00:00', $actual);
+
+        $item = json_decode('
+            {
+                "type": "datetime\\\\closest",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "2017-11-16"
+                    },
+                    {
+                        "type": "value",
+                        "value": "month"
+                    },
+                    {
+                        "type": "value",
+                        "value": 11
+                    },
+                    {
+                        "type": "value",
+                        "value": true
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('2017-11-01', $actual);
+    }
+
     function testList()
     {
         $item = json_decode('
@@ -1792,6 +2696,40 @@ class FormulaTest extends \PHPUnit_Framework_TestCase
         ');
         $actual = $this->formula->process($item, $this->entity);
         $this->assertEquals('test', $actual);
+    }
+
+    function testLowerCase()
+    {
+        $item = json_decode('
+            {
+                "type": "string\\\\lowerCase",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": " TeSt "
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals(' test ', $actual);
+    }
+
+    function testUpperCase()
+    {
+        $item = json_decode('
+            {
+                "type": "string\\\\upperCase",
+                "value": [
+                    {
+                        "type": "value",
+                        "value": "test"
+                    }
+                ]
+            }
+        ');
+        $actual = $this->formula->process($item, $this->entity);
+        $this->assertEquals('TEST', $actual);
     }
 
     function testSubstring()

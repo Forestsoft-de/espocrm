@@ -1,5 +1,5 @@
 {
-   "controller": "controllers/record",
+   "controller": "controllers/email",
    "acl": "acl/email",
    "model": "models/email",
    "views": {
@@ -48,11 +48,6 @@
              {
                "label": "Filters",
                "link": "#EmailFilter"
-             },
-             {
-               "label": "Email Accounts",
-               "link": "#EmailAccount",
-               "aclScope": "EmailAccountScope"
              }
          ]
       },
@@ -81,5 +76,6 @@
    ],
    "defaultFilterData": {
    },
-   "boolFilterList": []
+   "boolFilterList": [],
+    "iconClass": "glyphicon glyphicon-envelope"
 }

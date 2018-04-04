@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -303,9 +303,7 @@ Espo.define('views/email/detail', ['views/detail', 'email-helper'], function (De
             this.createView('quickCreate', viewName, {
                 attributes: attributes,
             }, function (view) {
-                view.render(function () {
-                    view.getView('edit').hideField('selectTemplate');
-                });
+                view.render();
 
                 view.notify(false);
 
@@ -340,9 +338,7 @@ Espo.define('views/email/detail', ['views/detail', 'email-helper'], function (De
                 this.createView('quickCreate', viewName, {
                     attributes: attributes,
                 }, function (view) {
-                    view.render(function () {
-                        view.getView('edit').hideField('selectTemplate');
-                    });
+                    view.render();
 
                     view.notify(false);
                 });
@@ -358,8 +354,10 @@ Espo.define('views/email/detail', ['views/detail', 'email-helper'], function (De
                 nameHtml = '<span class="text-warning">' + name + '</span>'
             }
 
+            var rootUrl = this.options.rootUrl || this.options.params.rootUrl || '#' + this.scope;
+
             return this.buildHeaderHtml([
-                '<a href="#' + this.model.name + '" class="action" data-action="navigateToRoot">' + this.getLanguage().translate(this.model.name, 'scopeNamesPlural') + '</a>',
+                '<a href="#' + rootUrl + '" class="action" data-action="navigateToRoot">' + this.getLanguage().translate(this.model.name, 'scopeNamesPlural') + '</a>',
                 nameHtml
             ]);
         },
@@ -368,15 +366,15 @@ Espo.define('views/email/detail', ['views/detail', 'email-helper'], function (De
             e.stopPropagation();
 
             this.getRouter().checkConfirmLeaveOut(function () {
+                var rootUrl = this.options.rootUrl || this.options.params.rootUrl || '#' + this.scope;
                 var options = {
                     isReturn: true,
                     isReturnThroughLink: true
                 };
+                this.getRouter().navigate(rootUrl, {trigger: false});
                 this.getRouter().dispatch(this.scope, null, options);
-                this.getRouter().navigate('#' + this.scope, {trigger: false});
             }, this);
-        },
+        }
 
     });
 });
-

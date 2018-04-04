@@ -38,23 +38,20 @@
             "view": "crm:views/opportunity/fields/contacts",
             "columns": {
                 "role": "opportunityRole"
-            }
+            },
+            "orderBy": "name"
         },
         "stage": {
             "type": "enum",
-            "options": ["Prospecting", "Qualification", "Needs Analysis", "Value Proposition", "Id. Decision Makers", "Perception Analysis", "Proposal/Price Quote", "Negotiation/Review", "Closed Won", "Closed Lost"],
+            "options": ["Prospecting", "Qualification", "Proposal", "Negotiation", "Closed Won", "Closed Lost"],
             "view": "crm:views/opportunity/fields/stage",
             "default": "Prospecting",
             "audited": true,
             "probabilityMap": {
                 "Prospecting": 10,
-                "Qualification": 10,
-                "Needs Analysis": 20,
-                "Value Proposition": 50,
-                "Id. Decision Makers": 60,
-                "Perception Analysis": 70,
-                "Proposal/Price Quote": 75,
-                "Negotiation/Review": 90,
+                "Qualification": 20,
+                "Proposal": 50,
+                "Negotiation": 80,
                 "Closed Won": 100,
                 "Closed Lost": 0
             },
@@ -101,6 +98,11 @@
             "layoutMassUpdateDisabled": true,
             "layoutListDisabled": true,
             "layoutDetailDisabled": true,
+            "customizationDefaultDisabled": true,
+            "customizationRequiredDisabled": true,
+            "customizationIsSortedDisabled": true,
+            "customizationAuditedDisabled": true,
+            "customizationReadOnlyDisabled": true,
             "where": {
                 "=": {
                     "leftJoins": ["contacts"],

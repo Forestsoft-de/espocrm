@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -188,5 +188,39 @@ class DateTime
     public function getInternalTodayString()
     {
         return date($this->getInternalDateFormat());
+    }
+
+    public function getTodayString($timezone = null)
+    {
+        if ($timezone) {
+            $timezoneObj = new \DateTimeZone($timezone);
+        } else {
+            $timezoneObj = $this->timezone;
+        }
+
+        $dateTime = new \DateTime();
+        $dateTime->setTimezone($timezoneObj);
+
+        return $dateTime->format($this->getPhpDateFormat());
+    }
+
+    public function getNowString($timezone = null, $format = null)
+    {
+        if ($timezone) {
+            $timezoneObj = new \DateTimeZone($timezone);
+        } else {
+            $timezoneObj = $this->timezone;
+        }
+
+        $dateTime = new \DateTime();
+        $dateTime->setTimezone($timezoneObj);
+
+        if ($format) {
+            $phpFormat = $this->convertFormatToPhp($format);
+        } else {
+            $phpFormat = $this->getPhpDateTimeFormat();
+        }
+
+        return $dateTime->format($phpFormat);
     }
 }

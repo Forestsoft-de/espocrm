@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -118,6 +118,10 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
 
         inlineEditDisabled: false,
 
+        printPdfAction: true,
+
+        portalLayoutDisabled: false,
+
         events: {
             'click .button-container .action': function (e) {
                 var $target = $(e.currentTarget);
@@ -138,7 +142,15 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
                 this.setEditMode();
                 $(window).scrollTop(0);
             } else {
-                this.getRouter().navigate('#' + this.scope + '/edit/' + this.model.id, {trigger: true});
+                var options = {
+                    id: this.model.id,
+                    model: this.model
+                };
+                if (this.options.rootUrl) {
+                    options.rootUrl = this.options.rootUrl;
+                }
+                this.getRouter().navigate('#' + this.scope + '/edit/' + this.model.id, {trigger: false});
+                this.getRouter().dispatch(this.scope, 'edit', options);
             }
         },
 
@@ -147,7 +159,7 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
         },
 
         actionSave: function () {
-            if (this.save()) {
+            if (this.save(null, true)) {
                 this.setDetailMode();
                 $(window).scrollTop(0)
             }
@@ -216,6 +228,21 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
                             }
                         }, this);
                     }
+                }
+            }
+
+            if (this.type === 'detail' && this.printPdfAction) {
+                var printPdfAction = true;
+
+                if (!~(this.getHelper().getAppParam('templateEntityTypeList') || []).indexOf(this.entityType)) {
+                    printPdfAction = false;
+                }
+
+                if (printPdfAction) {
+                    this.dropdownItemList.push({
+                        'label': 'Print to PDF',
+                        'name': 'printPdf'
+                    });
                 }
             }
         },
@@ -448,9 +475,21 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
         },
 
         cancelEdit: function () {
-            this.model.set(this.attributes);
+            this.resetModelChanges();
+
             this.setDetailMode();
             this.setIsNotChanged();
+        },
+
+        resetModelChanges: function () {
+            var attributes = this.model.attributes;
+            for (var attr in attributes) {
+                if (!(attr in this.attributes)) {
+                    this.model.unset(attr);
+                }
+            }
+
+            this.model.set(this.attributes);
         },
 
         delete: function () {
@@ -632,9 +671,15 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
                 }
             }
 
-            this.on('remove', function () {
+            if (this.getUser().isPortal() && !this.portalLayoutDisabled) {
+                if (this.getMetadata().get(['clientDefs', this.scope, 'additionalLayouts', this.layoutName + 'Portal'])) {
+                    this.layoutName += 'Portal';
+                }
+            }
+
+            this.once('remove', function () {
                 if (this.isChanged) {
-                    this.model.set(this.attributes);
+                    this.resetModelChanges();
                 }
                 this.setIsNotChanged();
                 $(window).off('scroll.detail-' + this.numId);
@@ -679,6 +724,7 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
 
             this.inlineEditDisabled = this.options.inlineEditDisabled || this.inlineEditDisabled;
             this.navigateButtonsDisabled = this.options.navigateButtonsDisabled || this.navigateButtonsDisabled;
+            this.portalLayoutDisabled = this.options.portalLayoutDisabled || this.portalLayoutDisabled;
 
             this.setupActionItems();
             this.setupBeforeFinal();
@@ -715,6 +761,41 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
             this.initDynamicLogic();
 
             this.setupFieldLevelSecurity();
+
+            this.initDynamicHandler();
+        },
+
+        initDynamicHandler: function () {
+            var dynamicHandlerClassName = this.dynamicHandlerClassName || this.getMetadata().get(['clientDefs', this.model.name, 'dynamicHandler']);
+            if (dynamicHandlerClassName) {
+                this.addReadyCondition(function () {
+                    return !!this.dynamicHandler;
+                }.bind(this));
+
+                require(dynamicHandlerClassName, function (DynamicHandler) {
+                    this.dynamicHandler = new DynamicHandler(this);
+
+                    this.listenTo(this.model, 'change', function (model, o) {
+                        if ('onChange' in this.dynamicHandler) {
+                            this.dynamicHandler.onChange(model, o);
+                        }
+
+                        var changedAttributes = model.changedAttributes();
+                        for (var attribute in changedAttributes) {
+                            var methodName = 'onChange' + Espo.Utils.upperCaseFirst(attribute);
+                            if (methodName in this.dynamicHandler) {
+                                this.dynamicHandler[methodName](model, changedAttributes[attribute], o);
+                            }
+                        }
+                    }, this);
+
+                    if ('init' in this.dynamicHandler) {
+                        this.dynamicHandler.init();
+                    }
+
+                    this.tryReady();
+                }.bind(this));
+            }
         },
 
         setupFinal: function () {
@@ -739,15 +820,17 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
             }
             var id = model.id;
 
+            var scope = model.name || this.scope;
+
             var url;
             if (this.mode === 'edit') {
-                url = '#' + this.scope + '/edit/' + id;
+                url = '#' + scope + '/edit/' + id;
             } else {
-                url = '#' + this.scope + '/view/' + id;
+                url = '#' + scope + '/view/' + id;
             }
 
-            this.getRouter().navigate('#' + this.scope + '/view/' + id, {trigger: false});
-            this.getRouter().dispatch(this.scope, 'view', {
+            this.getRouter().navigate('#' + scope + '/view/' + id, {trigger: false});
+            this.getRouter().dispatch(scope, 'view', {
                 id: id,
                 model: model,
                 indexOfRecord: indexOfRecord
@@ -788,6 +871,18 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
             }
         },
 
+        actionPrintPdf: function () {
+            this.createView('pdfTemplate', 'views/modals/select-template', {
+                entityType: this.model.name
+            }, function (view) {
+                view.render();
+                this.listenToOnce(view, 'select', function (model) {
+                    this.clearView('pdfTemplate');
+                    window.open('?entryPoint=pdf&entityType='+this.model.name+'&entityId='+this.model.id+'&templateId=' + model.id, '_blank');
+                }, this);
+            });
+        },
+
         afterSave: function () {
             if (this.isNew) {
                 this.notify('Created', 'success');
@@ -821,7 +916,7 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
             this.enableButtons();
         },
 
-        showDuplicate: function (duplicates) {
+        errorHandlerDuplicate: function (duplicates) {
             this.notify(false);
             this.createView('duplicate', 'views/modals/duplicate', {
                 scope: this.entityType,
@@ -980,6 +1075,9 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
             for (var p in simplifiedLayout) {
                 var panel = {};
                 panel.label = simplifiedLayout[p].label || null;
+                if ('customLabel' in simplifiedLayout[p]) {
+                    panel.customLabel = simplifiedLayout[p].customLabel;
+                }
                 panel.name = simplifiedLayout[p].name || null;
                 panel.style = simplifiedLayout[p].style || 'default';
                 panel.rows = [];
@@ -1073,6 +1171,9 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
                         if ('noLabel' in cellDefs) {
                             cell.noLabel = cellDefs.noLabel;
                         }
+                        if ('span' in cellDefs) {
+                            cell.span = cellDefs.span;
+                        }
 
                         row.push(cell);
                     }
@@ -1090,9 +1191,11 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
                 return;
             }
 
+            var gridLayoutType = this.gridLayoutType || 'record';
+
             if (this.detailLayout) {
                 this.gridLayout = {
-                    type: 'record',
+                    type: gridLayoutType,
                     layout: this.convertDetailLayout(this.detailLayout)
                 };
                 callback(this.gridLayout);
@@ -1101,7 +1204,7 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
 
             this._helper.layoutManager.get(this.model.name, this.layoutName, function (simpleLayout) {
                 this.gridLayout = {
-                    type: 'record',
+                    type: gridLayoutType,
                     layout: this.convertDetailLayout(simpleLayout)
                 };
                 callback(this.gridLayout);
@@ -1152,7 +1255,8 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
                 type: this.type,
                 inlineEditDisabled: this.inlineEditDisabled,
                 recordHelper: this.recordHelper,
-                recordViewObject: this
+                recordViewObject: this,
+                portalLayoutDisabled: this.portalLayoutDisabled
             });
         },
 
@@ -1170,6 +1274,19 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
             }
         },
 
+        exitAfterCreate: function () {
+            if (this.model.id) {
+                var url = '#' + this.scope + '/view/' + this.model.id;
+
+                this.getRouter().navigate(url, {trigger: false});
+                this.getRouter().dispatch(this.scope, 'view', {
+                    id: this.model.id,
+                    rootUrl: this.options.rootUrl
+                });
+                return true;
+            }
+        },
+
 
         /**
          * Called after save or cancel.
@@ -1177,27 +1294,44 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
          * @param {String} after Name of action (save, cancel, etc.) after which #exit is invoked.
          */
         exit: function (after) {
+            if (after) {
+                var methodName = 'exitAfter' + Espo.Utils.upperCaseFirst(after);
+                if (methodName in this) {
+                    var result = this[methodName]();
+                    if (result) {
+                        return;
+                    }
+                }
+            }
+
             var url;
             if (this.returnUrl) {
                 url = this.returnUrl;
             } else {
-                if (after) {
-                    var methodName = 'exitAfter' + Espo.Utils.upperCaseFirst(after);
-                    if (methodName in this) {
-                        this[methodName]();
-                        return;
-                    }
-                }
                 if (after == 'delete') {
+                    url = this.options.rootUrl || '#' + this.scope;
+                    this.getRouter().navigate(url, {trigger: false});
                     this.getRouter().dispatch(this.scope, null, {
                         isReturn: true
                     });
-                    this.getRouter().navigate('#' + this.scope, {trigger: false});
                     return;
                 }
-                url = '#' + this.scope;
                 if (this.model.id) {
-                    url += '/view/' + this.model.id;
+                    url = '#' + this.scope + '/view/' + this.model.id;
+
+                    if (!this.returnDispatchParams) {
+                        this.getRouter().navigate(url, {trigger: false});
+                        var options = {
+                            id: this.model.id,
+                            model: this.model
+                        };
+                        if (this.options.rootUrl) {
+                            options.rootUrl = this.options.rootUrl;
+                        }
+                        this.getRouter().dispatch(this.scope, 'view', options);
+                    }
+                } else {
+                    url = this.options.rootUrl || '#' + this.scope;
                 }
             }
 
@@ -1205,8 +1339,8 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
                 var controller = this.returnDispatchParams.controller;
                 var action = this.returnDispatchParams.action;
                 var options = this.returnDispatchParams.options || {};
-                this.getRouter().dispatch(controller, action, options);
                 this.getRouter().navigate(url, {trigger: false});
+                this.getRouter().dispatch(controller, action, options);
                 return;
             }
 
@@ -1216,4 +1350,3 @@ Espo.define('views/record/detail', ['views/record/base', 'view-record-helper'], 
     });
 
 });
-

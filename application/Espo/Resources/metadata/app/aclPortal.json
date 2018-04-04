@@ -63,7 +63,10 @@
                 "signature": false,
                 "followCreatedEntities": false,
                 "followEntityOnStreamPost": false,
-                "doNotFillAssignedUserIfNotRequired": false
+                "doNotFillAssignedUserIfNotRequired": false,
+                "useCustomTabList": false,
+                "tabList": false,
+                "emailUseExternalClient": false
             },
             "Call": {
                 "reminders": false
@@ -78,12 +81,21 @@
                 "isInternal": false,
                 "isGlobal": false
             },
+            "Email": {
+                "inboundEmails": false,
+                "emailAccounts": false
+            },
             "User": {
-                "gender": false
+                "isAdmin": false,
+                "contact": false,
+                "accounts": false,
+                "portalRoles": false,
+                "portals": false,
+                "isActive": false
             }
         }
     },
-    "default": {
+    "strictDefault": {
         "scopeLevel": {
         },
         "fieldLevel": {
@@ -111,12 +123,20 @@
                     "edit": "no"
                 },
                 "leads": false
+            },
+            "KnowledgeBaseArticle": {
+                "assignedUser": false
+            },
+            "User": {
+                "gender": false
             }
         }
     },
-    "scopeLevelTypesDefaults": {
-        "boolean": false,
-        "record": false
+    "valuePermissionList": [
+        "exportPermission"
+    ],
+    "permissionsStrictDefaults": {
+        "exportPermission": "no"
     },
     "scopeLevelTypesStrictDefaults": {
         "boolean": false,

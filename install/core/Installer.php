@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -191,11 +191,11 @@ class Installer
     public function saveData($database, $language)
     {
         $initData = include('install/core/afterInstall/config.php');
-
         $siteUrl = $this->getSystemHelper()->getBaseUrl();
+        $databaseDefaults = $this->app->getContainer()->get('config')->get('database');
 
         $data = array(
-            'database' => $database,
+            'database' => array_merge($databaseDefaults, $database),
             'language' => $language,
             'siteUrl' => $siteUrl,
             'passwordSalt' => $this->getPasswordHash()->generateSalt(),
@@ -299,7 +299,15 @@ class Installer
         }
 
         if (!isset($entity)) {
-            $entity = $this->getEntityManager()->getEntity($entityName);
+            if (isset($data['name'])) {
+                $entity = $this->getEntityManager()->getRepository($entityName)->where(array(
+                    'name' => $data['name'],
+                ))->findOne();
+            }
+
+            if (!isset($entity)) {
+                $entity = $this->getEntityManager()->getEntity($entityName);
+            }
         }
 
         $entity->set($data);

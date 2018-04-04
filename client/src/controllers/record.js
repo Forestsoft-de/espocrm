@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -93,10 +93,13 @@ Espo.define('controllers/record', 'controller', function (Dep) {
             });
         },
 
+        prepareModelView: function (model, options) {},
+
         view: function (options) {
             var id = options.id;
 
             var createView = function (model) {
+                this.prepareModelView(model, options);
                 this.createViewView.call(this, options, model);
             }.bind(this);
 
@@ -126,6 +129,26 @@ Espo.define('controllers/record', 'controller', function (Dep) {
             this.handleCheckAccess('create');
         },
 
+        prepareModelCreate: function (model, options) {
+            this.listenToOnce(model, 'before:save', function () {
+                var key = this.name + 'List';
+                var stored = this.getStoredMainView(key);
+                if (stored && !stored.storeViewAfterCreate) {
+                    this.clearStoredMainView(key);
+                }
+            }, this);
+
+            this.listenToOnce(model, 'after:save', function () {
+                var key = this.name + 'List';
+                var stored = this.getStoredMainView(key);
+                if (stored && stored.storeViewAfterCreate && stored.collection) {
+                    this.listenToOnce(stored, 'after:render', function () {
+                        stored.collection.fetch();
+                    });
+                }
+            }, this);
+        },
+
         create: function (options) {
             options = options || {};
             this.getModel(function (model) {
@@ -145,10 +168,7 @@ Espo.define('controllers/record', 'controller', function (Dep) {
                     model.set(options.attributes);
                 }
 
-                this.listenToOnce(model, 'before:save', function () {
-                    var key = this.name + 'List';
-                    this.clearStoredMainView(key);
-                }, this);
+                this.prepareModelCreate(model, options);
 
                 this.main(this.getViewName('edit'), o);
             });
@@ -156,6 +176,16 @@ Espo.define('controllers/record', 'controller', function (Dep) {
 
         beforeEdit: function () {
             this.handleCheckAccess('edit');
+        },
+
+        prepareModelEdit: function (model, options) {
+            this.listenToOnce(model, 'before:save', function () {
+                var key = this.name + 'List';
+                var stored = this.getStoredMainView(key);
+                if (stored && !stored.storeViewAfterUpdate) {
+                    this.clearStoredMainView(key);
+                }
+            }, this);
         },
 
         edit: function (options) {
@@ -166,10 +196,8 @@ Espo.define('controllers/record', 'controller', function (Dep) {
                 if (options.model) {
                     model = options.model;
                 }
-                this.listenToOnce(model, 'before:save', function () {
-                    var key = this.name + 'List';
-                    this.clearStoredMainView(key);
-                }, this);
+
+                this.prepareModelEdit(model, options);
 
                 this.showLoadingNotification();
                 this.listenToOnce(model, 'sync', function () {

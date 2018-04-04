@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -31,28 +31,28 @@ ob_start();
 $result = array('success' => false, 'errorMsg' => '');
 
 if (!empty($_SESSION['install'])) {
-	$preferences = array(
-		'dateFormat' => $_SESSION['install']['dateFormat'], 
-		'timeFormat' => $_SESSION['install']['timeFormat'],
-		'timeZone' => $_SESSION['install']['timeZone'],
-		'weekStart' => (int)$_SESSION['install']['weekStart'],
-		'defaultCurrency' => $_SESSION['install']['defaultCurrency'],
-		'thousandSeparator' => $_SESSION['install']['thousandSeparator'],
-		'decimalMark' => $_SESSION['install']['decimalMark'],
-		'language' => $_SESSION['install']['language'],
-	);
-	$res = $installer->setPreferences($preferences);
-	if (!empty($res)) {
-		$result['success'] = true;
-	}
-	else {
-		$result['success'] = false;
-		$result['errorMsg'] = 'Cannot save preferences';
-	}
+    $preferences = array(
+        'dateFormat' => $_SESSION['install']['dateFormat'], 
+        'timeFormat' => $_SESSION['install']['timeFormat'],
+        'timeZone' => $_SESSION['install']['timeZone'],
+        'weekStart' => (int)$_SESSION['install']['weekStart'],
+        'defaultCurrency' => $_SESSION['install']['defaultCurrency'],
+        'thousandSeparator' => $_SESSION['install']['thousandSeparator'],
+        'decimalMark' => $_SESSION['install']['decimalMark'],
+        'language' => $_SESSION['install']['language'],
+    );
+    $res = $installer->setPreferences($preferences);
+    if (!empty($res)) {
+        $result['success'] = true;
+    }
+    else {
+        $result['success'] = false;
+        $result['errorMsg'] = 'Cannot save preferences';
+    }
 }
 else {
-	$result['success'] = false;
-	$result['errorMsg'] = 'Cannot save preferences';
+    $result['success'] = false;
+    $result['errorMsg'] = 'Cannot save preferences';
 }
 
 ob_clean();

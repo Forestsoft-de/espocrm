@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -32,7 +32,7 @@ return array (
         'driver' => 'pdo_mysql',
         'host' => 'localhost',
         'port' => '',
-        'charset' => 'utf8',
+        'charset' => 'utf8mb4',
         'dbname' => '',
         'user' => '',
         'password' => '',
@@ -73,6 +73,7 @@ return array (
         'fr_FR',
         'id_ID',
         'it_IT',
+        'lt_LT',
         'nb_NO',
         'nl_NL',
         'tr_TR',
@@ -105,11 +106,14 @@ return array (
     'quickCreateList' => ["Account", "Contact", "Lead", "Opportunity", "Meeting", "Call", "Task", "Case", "Email"],
     'exportDisabled' => false,
     'adminNotifications' => true,
+    'adminNotificationsNewVersion' => true,
+    'adminNotificationsCronIsNotConfigured' => true,
     'assignmentEmailNotifications' => false,
     'assignmentEmailNotificationsEntityList' => ['Lead', 'Opportunity', 'Task', 'Case'],
     'assignmentNotificationsEntityList' => ['Meeting', 'Call', 'Task', 'Email'],
     "portalStreamEmailNotifications" => true,
     'streamEmailNotificationsEntityList' => ['Case'],
+    'streamEmailNotificationsTypeList' => ['Post', 'Status', 'EmailReceived'],
     'emailMessageMaxSize' => 10,
     'notificationsCheckInterval' => 10,
     'disabledCountQueryEntityList' => ['Email'],
@@ -136,7 +140,7 @@ return array (
                     'x' => 2,
                     'y' => 2,
                     'width' => 2,
-                    'height' => 2
+                    'height' => 4
                 ],
                 (object) [
                     'id' => 'default-stream',
@@ -145,14 +149,6 @@ return array (
                     'y' => 0,
                     'width' => 2,
                     'height' => 4
-                ],
-                (object) [
-                    'id' => 'default-tasks',
-                    'name' => 'Tasks',
-                    'x' => 2,
-                    'y' => 0,
-                    'width' => 2,
-                    'height' => 2
                 ]
             ]
         ]
@@ -164,10 +160,12 @@ return array (
     'cleanupJobPeriod' => '1 month',
     'cleanupActionHistoryPeriod' => '15 days',
     'cleanupAuthTokenPeriod' => '1 month',
-    'currencyFormat' => 1,
-    'currencyDecimalPlaces' => null,
+    'currencyFormat' => 2,
+    'currencyDecimalPlaces' => 2,
     'aclStrictMode' => false,
     'aclAllowDeleteCreated' => false,
+    'inlineAttachmentUploadMaxSize' => 20,
+    'textFilterUseContainsForVarchar' => false,
     'isInstalled' => false
 );
 

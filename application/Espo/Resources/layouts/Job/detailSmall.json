@@ -13,8 +13,8 @@
         "rows":[
             [{"name":"scheduledJob"}, false],
             [{"name":"serviceName"}, false],
-            [{"name":"method"}, false],
-            [{"name": "data"}]
+            [{"name":"methodName"}, false],
+            [{"name": "data", "fullWidth": true}]
         ]
     }
 ]

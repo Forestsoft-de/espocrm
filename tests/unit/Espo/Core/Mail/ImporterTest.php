@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -32,7 +32,7 @@ namespace tests\unit\Espo\Core\Mail;
 use \Espo\Entities\Attachment;
 use \Espo\Entities\Email;
 
-class ImporterTest extends \PHPUnit_Framework_TestCase
+class ImporterTest extends \PHPUnit\Framework\TestCase
 {
     function setUp()
     {
@@ -42,10 +42,22 @@ class ImporterTest extends \PHPUnit_Framework_TestCase
         $emailRepository = $this->getMockBuilder('\\Espo\\Core\\ORM\\Repositories\\RDB')->disableOriginalConstructor()->getMock();
         $emptyRepository = $this->getMockBuilder('\\Espo\\Core\\ORM\\Repositories\\RDB')->disableOriginalConstructor()->getMock();
 
+        $pdo = $this->getMockBuilder('\\Pdo')->disableOriginalConstructor()->getMock();
+
         $emailRepository
             ->expects($this->any())
             ->method('where')
             ->will($this->returnSelf());
+
+        $emailRepository
+            ->expects($this->any())
+            ->method('select')
+            ->will($this->returnSelf());
+
+        $entityManager
+            ->expects($this->any())
+            ->method('getPdo')
+            ->will($this->returnValue($pdo));
 
         $emptyRepository
             ->expects($this->any())
@@ -84,7 +96,7 @@ class ImporterTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValueMap($this->repositoryMap));
 
         $entityManager
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('saveEntity')
             ->with($this->isInstanceOf('\\Espo\\Entities\\Email'));
 
@@ -125,7 +137,10 @@ class ImporterTest extends \PHPUnit_Framework_TestCase
 
     function testImport2()
     {
-        if (extension_loaded('mailparse')) return;
+        if (extension_loaded('mailparse')) {
+            $this->assertTrue(true);
+            return;
+        }
 
         $entityManager = $this->entityManager;
         $config = $this->config;
@@ -137,7 +152,7 @@ class ImporterTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValueMap($this->repositoryMap));
 
         $entityManager
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('saveEntity')
             ->with($this->isInstanceOf('\\Espo\\Entities\\Email'));
 
@@ -160,7 +175,7 @@ class ImporterTest extends \PHPUnit_Framework_TestCase
         $message = new \Espo\Core\Mail\MessageWrapper();
         $message->setFullRawContent($contents);
 
-        $email = $importer->importMessage('PhpMimeMailParser', $message, null, ['teamTestId'], ['userTestId']);
+        $email = $importer->importMessage('MailMimeParser', $message, null, ['teamTestId'], ['userTestId']);
 
         $this->assertEquals('test 3', $email->get('name'));
 

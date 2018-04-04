@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -41,6 +41,8 @@ class Metadata
 
     private $unifier;
 
+    private $objUnifier;
+
     private $fileManager;
 
     private $moduleConfig;
@@ -51,7 +53,7 @@ class Metadata
 
     protected $cacheFile = 'data/cache/application/metadata.php';
 
-    protected $objCacheFile = 'data/cache/application/metadata.php';
+    protected $objCacheFile = 'data/cache/application/objMetadata.php';
 
     protected $paths = array(
         'corePath' => 'application/Espo/Resources/metadata',
@@ -95,6 +97,15 @@ class Metadata
         }
 
         return $this->unifier;
+    }
+
+    protected function getObjUnifier()
+    {
+        if (!isset($this->objUnifier)) {
+            $this->objUnifier = new \Espo\Core\Utils\File\Unifier($this->fileManager, $this, true);
+        }
+
+        return $this->objUnifier;
     }
 
     protected function getModuleConfig()
@@ -144,8 +155,8 @@ class Metadata
             $this->data = $this->getFileManager()->getPhpContents($this->cacheFile);
         } else {
             $this->clearVars();
-            $this->data = $this->getUnifier()->unify('metadata', $this->paths, true);
-            $this->data = $this->addAdditionalFields($this->data);
+            $objData = $this->getAllObjects(false, $reload);
+            $this->data = Util::objectToArray($objData);
 
             if ($this->useCache) {
                 $isSaved = $this->getFileManager()->putPhpContents($this->cacheFile, $this->data);
@@ -195,7 +206,7 @@ class Metadata
     public function getAll($isJSON = false, $reload = false)
     {
         if ($reload) {
-            $this->init(true);
+            $this->init($reload);
         }
 
         if ($isJSON) {
@@ -204,29 +215,86 @@ class Metadata
         return $this->data;
     }
 
+    protected function objInit($reload = false)
+    {
+        if (!$this->useCache) {
+            $reload = true;
+        }
+
+        if (file_exists($this->objCacheFile) && !$reload) {
+            $this->objData = $this->getFileManager()->getPhpContents($this->objCacheFile);
+        } else {
+            $this->objData = $this->getObjUnifier()->unify('metadata', $this->paths, true);
+            $this->objData = $this->addAdditionalFieldsObj($this->objData);
+
+            if ($this->useCache) {
+                $isSaved = $this->getFileManager()->putPhpContents($this->objCacheFile, $this->objData, true);
+                if ($isSaved === false) {
+                    $GLOBALS['log']->emergency('Metadata:objInit() - metadata has not been saved to a cache file');
+                }
+            }
+        }
+    }
+
+    protected function getObjData($reload = false)
+    {
+        if (!isset($this->objData) || $reload) {
+            $this->objInit($reload);
+        }
+
+        return $this->objData;
+    }
+
+    /**
+    * Get Object Metadata
+    *
+    * @param mixed string|array $key
+    * @param mixed $default
+    *
+    * @return object
+    */
+    public function getObjects($key = null, $default = null)
+    {
+        $objData = $this->getObjData();
+
+        return Util::getValueByKey($objData, $key, $default);
+    }
+
+    public function getAllObjects($isJSON = false, $reload = false)
+    {
+        $objData = $this->getObjData($reload);
+
+        if ($isJSON) {
+            return Json::encode($objData);
+        }
+
+        return $objData;
+    }
+
     public function getAllForFrontend()
     {
-        $data = $this->getAll();
+        $data = $this->getAllObjects();
 
         foreach ($this->frontendHiddenPathList as $row) {
             $p =& $data;
             $path = [&$p];
             foreach ($row as $i => $item) {
-                if (!array_key_exists($item, $p)) break;
+                if (is_array($item)) break;
+                if (!property_exists($p, $item)) break;
                 if ($i == count($row) - 1) {
-                    unset($p[$item]);
+                    unset($p->$item);
                     $o =& $p;
                     for ($j = $i - 1; $j > 0; $j--) {
-                        if (is_array($o) && empty($o)) {
+                        if (is_object($o) && !count(get_object_vars($o))) {
                             $o =& $path[$j];
                             $k = $row[$j];
-                            unset($o[$k]);
+                            unset($o->$k);
                         } else {
                             break;
                         }
                     }
                 } else {
-                    $p =& $p[$item];
+                    $p =& $p->$item;
                     $path[] = &$p;
                 }
             }
@@ -234,47 +302,17 @@ class Metadata
         return $data;
     }
 
-    /**
-     * todo: move to a separate file
-     * Add additional fields defined from metadata -> fields
-     *
-     * @param array $data
-     */
-    protected function addAdditionalFields(array $data)
+    protected function addAdditionalFieldsObj($data)
     {
-        $dataCopy = $data;
-        $definitionList = $data['fields'];
+        if (!isset($data->entityDefs)) return $data;
 
-        foreach ($dataCopy['entityDefs'] as $entityName => $entityParams) {
-            foreach ($entityParams['fields'] as $fieldName => $fieldParams) {
-
-                $additionalFields = $this->getMetadataHelper()->getAdditionalFieldList($fieldName, $fieldParams, $definitionList);
-                if (!empty($additionalFields)) {
-                    //merge or add to the end of data array
-                    foreach ($additionalFields as $subFieldName => $subFieldParams) {
-                        if (isset($entityParams['fields'][$subFieldName])) {
-                            $data['entityDefs'][$entityName]['fields'][$subFieldName] = Util::merge($subFieldParams, $entityParams['fields'][$subFieldName]);
-                        } else {
-                            $data['entityDefs'][$entityName]['fields'][$subFieldName] = $subFieldParams;
-                        }
-                    }
-                }
-            }
-        }
-
-        return $data;
-    }
-
-    protected function addAdditionalFieldsObj()
-    {
-        $data = &$this->data;
-
-        if (!isset($data->entityDefs)) return;
+        $fieldDefinitionList = Util::objectToArray($data->fields);
 
         foreach (get_object_vars($data->entityDefs) as $entityType => $entityDefsItem) {
             if (!isset($entityDefsItem->fields)) continue;
             foreach (get_object_vars($entityDefsItem->fields) as $field => $fieldDefsItem) {
-                $additionalFields = $this->getMetadataHelper()->getAdditionalFieldList($field, Util::objectToArray($fieldDefsItem), Util::objectToArray($data->fields));
+                $additionalFields = $this->getMetadataHelper()->getAdditionalFieldList($field, Util::objectToArray($fieldDefsItem), $fieldDefinitionList);
+
                 if (!$additionalFields) continue;
                 foreach ($additionalFields as $subFieldName => $subFieldParams) {
                     if (isset($entityDefsItem->fields->$subFieldName)) {
@@ -285,6 +323,49 @@ class Metadata
                 }
             }
         }
+
+        return $data;
+    }
+
+    /**
+     * Get metadata definition in custom directory
+     *
+     * @param  string|array $key
+     * @param  mixed $default
+     *
+     * @return object|mixed
+     */
+    public function getCustom($key1, $key2, $default = null)
+    {
+        $filePath = array($this->paths['customPath'], $key1, $key2.'.json');
+        $fileContent = $this->getFileManager()->getContents($filePath);
+
+        if ($fileContent) {
+            return Json::decode($fileContent);
+        }
+
+        return $default;
+    }
+
+    /**
+     * Set and save metadata in custom directory. The data is not merging with existing data. Use getCustom() to get existing data.
+     *
+     * @param  string $key1
+     * @param  string $key2
+     * @param  array $data
+     *
+     * @return boolean
+     */
+    public function saveCustom($key1, $key2, $data)
+    {
+        $filePath = array($this->paths['customPath'], $key1, $key2.'.json');
+        $changedData = Json::encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        $result = $this->getFileManager()->putContents($filePath, $changedData);
+
+        $this->init(true);
+
+        return true;
     }
 
     /**
@@ -329,13 +410,15 @@ class Metadata
         switch ($key1) {
             case 'entityDefs':
                 //unset related additional fields, e.g. a field with "address" type
+                $fieldDefinitionList = $this->get('fields');
+
                 $unsetList = $unsets;
                 foreach ($unsetList as $unsetItem) {
                     if (preg_match('/fields\.([^\.]+)/', $unsetItem, $matches) && isset($matches[1])) {
                         $fieldName = $matches[1];
                         $fieldPath = [$key1, $key2, 'fields', $fieldName];
 
-                        $additionalFields = $this->getMetadataHelper()->getAdditionalFieldList($fieldName, $this->get($fieldPath));
+                        $additionalFields = $this->getMetadataHelper()->getAdditionalFieldList($fieldName, $this->get($fieldPath), $fieldDefinitionList);
                         if (is_array($additionalFields)) {
                             foreach ($additionalFields as $additionalFieldName => $additionalFieldParams) {
                                 $unsets[] = 'fields.' . $additionalFieldName;

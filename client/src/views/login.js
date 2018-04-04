@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -64,8 +64,14 @@ Espo.define('views/login', 'view', function (Dep) {
         },
 
         login: function () {
-                var userName = $("#field-userName").val();
-                var password = $("#field-password").val();
+                var userName = $('#field-userName').val();
+                var trimmedUserName = userName.trim();
+                if (trimmedUserName !== userName) {
+                    $('#field-userName').val(trimmedUserName);
+                    userName = trimmedUserName;
+                }
+
+                var password = $('#field-password').val();
 
                 var $submit = this.$el.find('#btn-login');
 
@@ -88,7 +94,7 @@ Espo.define('views/login', 'view', function (Dep) {
                     return;
                 }
 
-                $submit.addClass('disabled');
+                $submit.addClass('disabled').attr('disabled', 'disabled');
 
                 this.notify('Please wait...');
 
@@ -96,7 +102,8 @@ Espo.define('views/login', 'view', function (Dep) {
                     url: 'App/user',
                     headers: {
                         'Authorization': 'Basic ' + Base64.encode(userName  + ':' + password),
-                        'Espo-Authorization': Base64.encode(userName + ':' + password)
+                        'Espo-Authorization': Base64.encode(userName + ':' + password),
+                        'Espo-Authorization-By-Token': false
                     },
                     success: function (data) {
                         this.notify(false);
@@ -108,11 +115,12 @@ Espo.define('views/login', 'view', function (Dep) {
                             user: data.user,
                             preferences: data.preferences,
                             acl: data.acl,
-                            settings: data.settings
+                            settings: data.settings,
+                            appParams: data.appParams
                         });
                     }.bind(this),
                     error: function (xhr) {
-                        $submit.removeClass('disabled');
+                        $submit.removeClass('disabled').removeAttr('disabled');
                         if (xhr.status == 401) {
                             this.onWrong();
                         }

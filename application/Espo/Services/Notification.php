@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -230,7 +230,12 @@ class Notification extends \Espo\Services\Record
 
         if (!empty($ids)) {
             $pdo = $this->getEntityManager()->getPDO();
-            $sql = "UPDATE notification SET `read` = 1 WHERE id IN ('" . implode("', '", $ids) ."')";
+            $idQuotedList = [];
+            foreach ($ids as $id) {
+                $idQuotedList[] = $pdo->quote($id);
+            }
+
+            $sql = "UPDATE notification SET `read` = 1 WHERE id IN (" . implode(', ', $idQuotedList) .")";
 
             $s = $pdo->prepare($sql);
             $s->execute();

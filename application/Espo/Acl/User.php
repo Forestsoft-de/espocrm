@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -30,6 +30,7 @@
 namespace Espo\Acl;
 
 use \Espo\ORM\Entity;
+use \Espo\Entities\User as EntityUser;
 
 class User extends \Espo\Core\Acl\Base
 {
@@ -37,5 +38,36 @@ class User extends \Espo\Core\Acl\Base
     {
         return $user->id === $entity->id;
     }
-}
 
+    public function checkEntityCreate(EntityUser $user, Entity $entity, $data)
+    {
+        if (!$user->isAdmin()) {
+            return false;
+        }
+        return $this->checkEntity($user, $entity, $data, 'create');
+    }
+
+    public function checkEntityDelete(EntityUser $user, Entity $entity, $data)
+    {
+        if ($entity->id === 'system') {
+            return false;
+        }
+        if (!$user->isAdmin()) {
+            return false;
+        }
+        return parent::checkEntityDelete($user, $entity, $data);
+    }
+
+    public function checkEntityEdit(EntityUser $user, Entity $entity, $data)
+    {
+        if ($entity->id === 'system') {
+            return false;
+        }
+        if (!$user->isAdmin()) {
+            if ($user->id !== $entity->id) {
+                return false;
+            }
+        }
+        return $this->checkEntity($user, $entity, $data, 'edit');
+    }
+}

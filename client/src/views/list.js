@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -52,6 +52,12 @@ Espo.define('views/list', ['views/main', 'search-manager'], function (Dep, Searc
 
         optionsToPass: [],
 
+        storeViewAfterCreate: false,
+
+        storeViewAfterUpdate: true,
+
+        keepCurrentRootUrl: false,
+
         setup: function () {
             this.collection.maxSize = this.getConfig().get('recordsPerPage') || this.collection.maxSize;
 
@@ -90,7 +96,8 @@ Espo.define('views/list', ['views/main', 'search-manager'], function (Dep, Searc
             this.createView('header', this.headerView, {
                 collection: this.collection,
                 el: '#main > .page-header',
-                scope: this.scope
+                scope: this.scope,
+                isXsSingleRow: true
             });
         },
 
@@ -185,6 +192,8 @@ Espo.define('views/list', ['views/main', 'search-manager'], function (Dep, Searc
             }
         },
 
+        prepareRecordViewOptions: function (options) {},
+
         createListRecordView: function (fetch) {
             var o = {
                 collection: this.collection,
@@ -194,8 +203,11 @@ Espo.define('views/list', ['views/main', 'search-manager'], function (Dep, Searc
             this.optionsToPass.forEach(function (option) {
                 o[option] = this.options[option];
             }, this);
+            if (this.keepCurrentRootUrl) {
+                o.keepCurrentRootUrl = true;
+            }
+            this.prepareRecordViewOptions(o);
             var listViewName = this.getRecordViewName();
-
             this.createView('list', listViewName, o, function (view) {
                 if (!this.hasParentView()) {
                     view.undelegateEvents();
@@ -237,15 +249,35 @@ Espo.define('views/list', ['views/main', 'search-manager'], function (Dep, Searc
 
         getCreateAttributes: function () {},
 
+        prepareCreateReturnDispatchParams: function (params) {},
+
         actionQuickCreate: function () {
             var attributes = this.getCreateAttributes() || {};
 
             this.notify('Loading...');
             var viewName = this.getMetadata().get('clientDefs.' + this.scope + '.modalViews.edit') || 'views/modals/edit';
-            this.createView('quickCreate', 'views/modals/edit', {
+            var options = {
                 scope: this.scope,
                 attributes: attributes
-            }, function (view) {
+            };
+            if (this.keepCurrentRootUrl) {
+                options.rootUrl = this.getRouter().getCurrentUrl();
+            }
+
+            var returnDispatchParams = {
+                controller: this.scope,
+                action: null,
+                options: {
+                    isReturn: true
+                }
+            };
+            this.prepareCreateReturnDispatchParams(returnDispatchParams);
+            _.extend(options, {
+                returnUrl: this.getRouter().getCurrentUrl(),
+                returnDispatchParams: returnDispatchParams
+            });
+
+            this.createView('quickCreate', 'views/modals/edit', options, function (view) {
                 view.render();
                 view.notify(false);
                 this.listenToOnce(view, 'after:save', function () {
@@ -260,12 +292,29 @@ Espo.define('views/list', ['views/main', 'search-manager'], function (Dep, Searc
             var url = '#' + this.scope + '/create';
             var attributes = this.getCreateAttributes() || {};
 
-            router.dispatch(this.scope, 'create', {
+            var options = {
                 attributes: attributes
+            };
+            if (this.keepCurrentRootUrl) {
+                options.rootUrl = this.getRouter().getCurrentUrl();
+            }
+
+            var returnDispatchParams = {
+                controller: this.scope,
+                action: null,
+                options: {
+                    isReturn: true
+                }
+            };
+            this.prepareCreateReturnDispatchParams(returnDispatchParams);
+            _.extend(options, {
+                returnUrl: this.getRouter().getCurrentUrl(),
+                returnDispatchParams: returnDispatchParams
             });
+
             router.navigate(url, {trigger: false});
+            router.dispatch(this.scope, 'create', options);
         }
 
     });
 });
-

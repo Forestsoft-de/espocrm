@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -48,6 +48,20 @@ class User extends Record
     }
 
     protected $internalAttributeList = ['password'];
+
+    protected $nonAdminReadOnlyAttributeList = [
+        'userName',
+        'isActive',
+        'isAdmin',
+        'isPortalUser',
+        'teamsIds',
+        'rolesIds',
+        'password',
+        'portalsIds',
+        'portalRolesIds',
+        'contactId',
+        'accountsIds'
+    ];
 
     protected function getMailSender()
     {
@@ -178,11 +192,11 @@ class User extends Record
 
         $job->set(array(
             'serviceName' => 'User',
-            'method' => 'removeChangePasswordRequestJob',
-            'data' => json_encode(array(
-                'id' => $passwordChangeRequest->id,
-            )),
-            'executeTime' => $dt->format('Y-m-d H:i:s') ,
+            'methodName' => 'removeChangePasswordRequestJob',
+            'data' => [
+                'id' => $passwordChangeRequest->id
+            ],
+            'executeTime' => $dt->format('Y-m-d H:i:s')
         ));
 
         $this->getEntityManager()->saveEntity($job);
@@ -192,10 +206,10 @@ class User extends Record
 
     public function removeChangePasswordRequestJob($data)
     {
-        if (empty($data['id'])) {
+        if (empty($data->id)) {
             return;
         }
-        $id = $data['id'];
+        $id = $data->id;
 
         $p = $this->getEntityManager()->getEntity('PasswordChangeRequest', $id);
         if ($p) {
@@ -212,20 +226,35 @@ class User extends Record
         return $passwordHash->hash($password);
     }
 
+    protected function filterInput($data)
+    {
+        parent::filterInput($data);
+
+        if (!$this->getUser()->get('isSuperAdmin')) {
+            unset($data->isSuperAdmin);
+        }
+
+        if (!$this->getUser()->isAdmin()) {
+            foreach ($this->nonAdminReadOnlyAttributeList as $attribute) {
+                unset($data->$attribute);
+            }
+            if (!$this->getAcl()->checkScope('Team')) {
+                unset($data->defaultTeamId);
+            }
+        }
+    }
+
     public function createEntity($data)
     {
         $newPassword = null;
-        if (array_key_exists('password', $data)) {
-            $newPassword = $data['password'];
-            $data['password'] = $this->hashPassword($data['password']);
-        }
-        if (!$this->getUser()->get('isSuperAdmin')) {
-            unset($data['isSuperAdmin']);
+        if (property_exists($data, 'password')) {
+            $newPassword = $data->password;
+            $data->password = $this->hashPassword($data->password);
         }
 
         $user = parent::createEntity($data);
 
-        if (!is_null($newPassword) && !empty($data['sendAccessInfo'])) {
+        if (!is_null($newPassword) && !empty($data->sendAccessInfo)) {
             if ($user->isActive()) {
                 try {
                     $this->sendPassword($user, $newPassword);
@@ -242,24 +271,21 @@ class User extends Record
             throw new Forbidden();
         }
         $newPassword = null;
-        if (array_key_exists('password', $data)) {
-            $newPassword = $data['password'];
-            $data['password'] = $this->hashPassword($data['password']);
+        if (property_exists($data, 'password')) {
+            $newPassword = $data->password;
+            $data->password = $this->hashPassword($data->password);
         }
 
         if ($id == $this->getUser()->id) {
-            unset($data['isActive']);
-            unset($data['isPortalUser']);
-        }
-        if (!$this->getUser()->get('isSuperAdmin')) {
-            unset($data['isSuperAdmin']);
+            unset($data->isActive);
+            unset($data->isPortalUser);
         }
 
         $user = parent::updateEntity($id, $data);
 
         if (!is_null($newPassword)) {
             try {
-                if ($user->isActive() && !empty($data['sendAccessInfo'])) {
+                if ($user->isActive() && !empty($data->sendAccessInfo)) {
                     $this->sendPassword($user, $newPassword);
                 }
             } catch (\Exception $e) {}
@@ -288,7 +314,7 @@ class User extends Record
         ))->count();
     }
 
-    protected function beforeCreate(Entity $entity, array $data = array())
+    protected function beforeCreateEntity(Entity $entity, $data)
     {
         if ($this->getConfig()->get('userLimit') && !$this->getUser()->get('isSuperAdmin')) {
             $userCount = $this->getInternalUserCount();
@@ -304,13 +330,13 @@ class User extends Record
         }
     }
 
-    protected function beforeUpdate(Entity $user, array $data = array())
+    protected function beforeUpdateEntity(Entity $user, $data)
     {
         if ($this->getConfig()->get('userLimit') && !$this->getUser()->get('isSuperAdmin')) {
             if (
-                ($user->get('isActive') && $user->isFieldChanged('isActive') && !$user->get('isPortalUser'))
+                ($user->get('isActive') && $user->isAttributeChanged('isActive') && !$user->get('isPortalUser'))
                 ||
-                (!$user->get('isPortalUser') && $user->isFieldChanged('isPortalUser'))
+                (!$user->get('isPortalUser') && $user->isAttributeChanged('isPortalUser'))
             ) {
                 $userCount = $this->getInternalUserCount();
                 if ($userCount >= $this->getConfig()->get('userLimit')) {
@@ -320,9 +346,9 @@ class User extends Record
         }
         if ($this->getConfig()->get('portalUserLimit') && !$this->getUser()->get('isSuperAdmin')) {
             if (
-                ($user->get('isActive') && $user->isFieldChanged('isActive') && $user->get('isPortalUser'))
+                ($user->get('isActive') && $user->isAttributeChanged('isActive') && $user->get('isPortalUser'))
                 ||
-                ($user->get('isPortalUser') && $user->isFieldChanged('isPortalUser'))
+                ($user->get('isPortalUser') && $user->isAttributeChanged('isPortalUser'))
             ) {
                 $portalUserCount = $this->getPortalUserCount();
                 if ($portalUserCount >= $this->getConfig()->get('portalUserLimit')) {
@@ -470,6 +496,25 @@ class User extends Record
         return true;
     }
 
+    protected function checkEntityForMassUpdate(Entity $entity, $data)
+    {
+        if ($entity->id == 'system') {
+            return false;
+        }
+        if ($entity->id == $this->getUser()->id) {
+            if (property_exists($data, 'isActive')) {
+                return false;
+            }
+            if (property_exists($data, 'isPortalUser')) {
+                return false;
+            }
+            if (property_exists($data, 'isSuperAdmin')) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public function afterUpdate(Entity $entity, array $data = array())
     {
         parent::afterUpdate($entity, $data);
@@ -499,7 +544,7 @@ class User extends Record
         $this->getFileManager()->removeFile('data/cache/application/acl/' . $id . '.php');
     }
 
-    protected function afterMassUpdate(array $idList, array $data = array())
+    protected function afterMassUpdate(array $idList, $data)
     {
         parent::afterMassUpdate($idList, $data);
 
@@ -509,5 +554,52 @@ class User extends Record
             }
         }
     }
-}
 
+    public function loadAdditionalFields(Entity $entity)
+    {
+        parent::loadAdditionalFields($entity);
+        $this->loadLastAccessField($entity);
+    }
+
+    public function loadLastAccessField(Entity $entity)
+    {
+        $forbiddenFieldList = $this->getAcl()->getScopeForbiddenFieldList($this->entityType, 'edit');
+        if (in_array('lastAccess', $forbiddenFieldList)) return;
+
+        $authToken = $this->getEntityManager()->getRepository('AuthToken')->select(['id', 'lastAccess'])->where([
+            'userId' => $entity->id
+        ])->order('lastAccess', true)->findOne();
+
+        $lastAccess = null;
+
+        if ($authToken) {
+            $lastAccess = $authToken->get('lastAccess');
+        }
+
+        $dt = null;
+
+        if ($lastAccess) {
+            try {
+                $dt = new \DateTime($lastAccess);
+            } catch (\Exception $e) {}
+        }
+
+        $where = [
+            'userId' => $entity->id,
+            'isDenied' => false
+        ];
+
+        if ($dt) {
+            $where['requestTime>'] = $dt->format('U');
+        }
+
+        $authLogRecord = $this->getEntityManager()->getRepository('AuthLogRecord')
+            ->select(['id', 'createdAt'])->where($where)->order('requestTime', true)->findOne();
+
+        if ($authLogRecord) {
+            $lastAccess = $authLogRecord->get('createdAt');
+        }
+
+        $entity->set('lastAccess', $lastAccess);
+    }
+}

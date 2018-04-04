@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -71,7 +71,7 @@ class Image extends \Espo\Core\EntryPoints\Base
         $this->show($id, $size);
     }
 
-    protected function show($id, $size)
+    protected function show($id, $size, $disableAccessCheck = false)
     {
         $attachment = $this->getEntityManager()->getEntity('Attachment', $id);
 
@@ -79,7 +79,7 @@ class Image extends \Espo\Core\EntryPoints\Base
             throw new NotFound();
         }
 
-        if (!$this->getAcl()->checkEntity($attachment)) {
+        if (!$disableAccessCheck && !$this->getAcl()->checkEntity($attachment)) {
             throw new Forbidden();
         }
 
@@ -197,6 +197,7 @@ class Image extends \Espo\Core\EntryPoints\Base
                 break;
         }
 
+        $targetImage = imagerotate($targetImage, array_values([0, 0, 0, 180, 0, 0, -90, 0, 90])[@exif_read_data($filePath)['Orientation'] ?: 0], 0);
 
         return $targetImage;
     }

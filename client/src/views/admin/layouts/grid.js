@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -39,16 +39,23 @@ Espo.define('views/admin/layouts/grid', 'views/admin/layouts/base', function (De
         columnCount: 2,
 
         data: function () {
-            return {
+            var data = {
                 scope: this.scope,
                 type: this.type,
                 buttonList: this.buttonList,
                 enabledFields: this.enabledFields,
                 disabledFields: this.disabledFields,
                 panels: this.panels,
-                columnCount: this.columnCount
+                columnCount: this.columnCount,
+                panelDataList: this.getPanelDataList()
             };
+            return data;
         },
+
+        emptyCellTemplate:
+                            '<li class="empty disabled cell">' +
+                            '<a href="javascript:" data-action="minusCell" class="remove-field"><i class="glyphicon glyphicon-minus"></i></a>' +
+                            '</li>',
 
         events: _.extend({
             'click #layout a[data-action="addPanel"]': function () {
@@ -62,6 +69,21 @@ Espo.define('views/admin/layouts/grid', 'views/admin/layouts/base', function (De
                     }
                 });
                 $(e.target).closest('ul.panels > li').remove();
+
+                var number = $(e.currentTarget).data('number');
+                this.clearView('panels-' + number);
+
+                var index = -1;
+                this.panels.forEach(function (item, i) {
+                    if (item.number === number) {
+                        index = i;
+                    }
+                }, this);
+
+                if (~index) {
+                    this.panels.splice(index, 1);
+                }
+
                 this.normilizaDisabledItemList();
             },
             'click #layout a[data-action="addRow"]': function (e) {
@@ -84,10 +106,10 @@ Espo.define('views/admin/layouts/grid', 'views/admin/layouts/base', function (De
                 var index = el.index();
                 var parent = el.parent();
 
-                el.appendTo($("ul.disabled"));
+                el.appendTo($('ul.disabled'));
 
-                var empty = $('<li class="empty disabled"></li>');
-                if (el.data('full-width')) {
+                var empty = $(this.emptyCellTemplate);
+                if (el.attr('data-full-width')) {
                     for (var i = 0; i < this.columnCount; i++) {
                         parent.append(empty.clone());
                     }
@@ -100,7 +122,6 @@ Espo.define('views/admin/layouts/grid', 'views/admin/layouts/base', function (De
                     }
                 }
 
-                el.data('full-width', null);
                 el.removeAttr('data-full-width');
 
                 this.makeDraggable();
@@ -121,13 +142,12 @@ Espo.define('views/admin/layouts/grid', 'views/admin/layouts/base', function (De
 
                 $ul.children('li.empty').remove();
                 $ul.children('li:not(:first-child)').remove();
-                $ul.children('li').data('full-width', true).attr('data-full-width', true);
+                $ul.children('li').attr('data-full-width', true);
 
                 if (isEmpty) {
-                    $ul.append($('<li class="empty disabled"></li>').data('full-width', true).attr('data-full-width', true));
+                    $ul.append($('<li class="empty"></li>').attr('data-full-width', true));
                     this.makeDraggable();
                 }
-
             },
             'click #layout a[data-action="edit-panel-label"]': function (e) {
                 var $header = $(e.target).closest('header');
@@ -161,6 +181,7 @@ Espo.define('views/admin/layouts/grid', 'views/admin/layouts/base', function (De
                     view.render();
                     this.listenTo(view, 'after:save', function (attributes) {
                         $label.text(attributes.panelName);
+                        $label.attr('data-is-custom', 'true');
                         $header.data('style', attributes.style);
                         view.close();
                     }, this);
@@ -174,17 +195,73 @@ Espo.define('views/admin/layouts/grid', 'views/admin/layouts/base', function (De
             }.bind(this));
         },
 
-        addPanel: function (data) {
-            var tpl = this.unescape($("#layout-panel-tpl").html());
+        addPanel: function () {
+            this.lastPanelNumber ++;
+            var number = this.lastPanelNumber;
+            var data = {
+                customLabel: this.translate('New panel', 'labels', 'LayoutManager'),
+                rows: [[]],
+                number: number
+            };
+            this.panels.push(data);
 
-            var empty = false;
-            if (!data) {
-                empty = true;
+            var $li = $('<li class="panel-layout"></li>');
+            $li.attr('data-number', number);
+            this.$el.find('ul.panels').append($li);
+
+            this.createPanelView(data, true, function (view) {
+                view.render();
+            }, this);
+        },
+
+        getPanelDataList: function () {
+            var panelDataList = [];
+
+            this.panels.forEach(function (item) {
+                var o = {};
+                o.viewKey = 'panel-' + item.number;
+                o.number = item.number;
+                panelDataList.push(o);
+            }, this);
+
+            return panelDataList;
+        },
+
+        cancel: function () {
+            this.loadLayout(function () {
+                var countLoaded = 0;
+                this.setupPanels(function () {
+                    countLoaded ++;
+                    if (countLoaded === this.panels.length) {
+                        this.reRender();
+                    }
+                }.bind(this));
+            }.bind(this));
+        },
+
+        setupPanels: function (callback) {
+            this.lastPanelNumber = -1;
+
+            this.panels = Espo.Utils.cloneDeep(this.panels);
+
+            this.panels.forEach(function (panel, i) {
+                panel.number = i;
+                this.lastPanelNumber ++;
+                this.createPanelView(panel, false, callback);
+            }, this);
+        },
+
+        createPanelView: function (data, empty, callback) {
+            data.label = data.label || '';
+
+            data.isCustomLabel = false;
+            if (data.customLabel) {
+                data.label = data.customLabel;
+                data.isCustomLabel = true;
+            } else {
+                data.label = this.translate(data.label, 'labels', this.scope);
             }
 
-            data = data || {label: this.translate('New panel', 'labels', 'Admin'), rows: [[]]};
-
-            data.label = data.label || '';
             data.style = data.style || null;
 
             data.rows.forEach(function (row) {
@@ -198,14 +275,21 @@ Espo.define('views/admin/layouts/grid', 'views/admin/layouts/base', function (De
                 for (var i in row) {
                     if (row[i] != false) {
                         row[i].label = this.getLanguage().translate(row[i].name, 'fields', this.scope);
+                        if ('customLabel' in row[i]) {
+                            row[i].customLabel = row[i].customLabel;
+                            row[i].hasCustomLabel = true;
+                        }
                     }
-
                 }
-            }.bind(this));
+            }, this);
 
-
-            var html = _.template(tpl, data);
-            $("#layout .panels").append(html);
+            this.createView('panel-' + data.number, 'view', {
+                el: this.getSelector() + ' li.panel-layout[data-number="'+data.number+'"]',
+                template: 'admin/layouts/grid-panel',
+                data: function () {
+                    return data;
+                }
+            }, callback);
         },
 
         makeDraggable: function () {
@@ -246,13 +330,19 @@ Espo.define('views/admin/layouts/grid', 'views/admin/layouts/base', function (De
                         }
                     }
 
-                    var fullWidth = $(this).data('fullWidth');
+                    var $target = $(this);
+                    var $draggable = $(ui.draggable);
 
-                    $(this).data('fullWidth', $(ui.draggable).data('fullWidth'));
-                    $(ui.draggable).data('fullWidth', fullWidth);
+                    var targetFullWidth = $target.attr('data-full-width');
+                    var draggableFullWidth = $draggable.attr('data-full-width');
 
-                    $(this).attr('data-full-width', $(ui.draggable).attr('data-full-width'));
-                    $(ui.draggable).attr('data-full-width', fullWidth);
+                    if (draggableFullWidth && !targetFullWidth) {
+                        $draggable.removeAttr('data-full-width');
+                        $target.attr('data-full-width', 'true');
+                    } else if (!draggableFullWidth && targetFullWidth) {
+                        $draggable.attr('data-full-width', 'true');
+                        $target.removeAttr('data-full-width');
+                    }
 
                     ui.draggable.css({
                         top: 0,
@@ -269,9 +359,6 @@ Espo.define('views/admin/layouts/grid', 'views/admin/layouts/base', function (De
         },
 
         afterRender: function () {
-            this.panels.forEach(function (panel) {
-                this.addPanel(panel);
-            }.bind(this));
             this.makeDraggable();
         },
 
@@ -279,11 +366,20 @@ Espo.define('views/admin/layouts/grid', 'views/admin/layouts/base', function (De
             var layout = [];
             var self = this;
             $("#layout ul.panels > li").each(function () {
+                var $label = $(this).find('header label');
                 var o = {
-                    label: $(this).find('header label').text(),
                     style: $(this).find('header').data('style') || 'default',
                     rows: []
                 };
+                var name = $(this).find('header').data('name');
+                if (name) {
+                    o.name = name;
+                }
+                if ($label.attr('data-is-custom')) {
+                    o.customLabel = $label.text();
+                } else {
+                    o.label = $label.text();
+                }
                 $(this).find('ul.rows > li').each(function (i, li) {
                     var row = [];
                     $(li).find('ul.cells > li').each(function (i, li) {
@@ -291,6 +387,12 @@ Espo.define('views/admin/layouts/grid', 'views/admin/layouts/base', function (De
                         if (!$(li).hasClass('empty')) {
                             cell = {};
                             self.dataAttributeList.forEach(function (attr) {
+                                if (attr === 'customLabel') {
+                                    if ($(li).get(0).hasAttribute('data-custom-label')) {
+                                        cell[attr] = $(li).attr('data-custom-label');
+                                    }
+                                    return;
+                                }
                                 var value = $(li).data(Espo.Utils.toDom(attr)) || null;
                                 if (value) {
                                     cell[attr] = value;

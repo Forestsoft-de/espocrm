@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -35,11 +35,71 @@ module.exports = function (grunt) {
         'client/lib/bootstrap.min.js',
         'client/lib/bootstrap-datepicker.js',
         'client/lib/bull.js',
+        'client/lib/marked.min.js',
+
         'client/src/namespace.js',
         'client/src/exceptions.js',
         'client/src/loader.js',
-        'client/src/utils.js'
+        'client/src/utils.js',
+
+        'client/src/acl.js',
+        'client/src/model.js',
+        'client/src/model-offline.js',
+        'client/src/ajax.js',
+        'client/src/controller.js',
+
+        'client/src/ui.js',
+        'client/src/acl-manager.js',
+        'client/src/cache.js',
+        'client/src/storage.js',
+        'client/src/models/settings.js',
+        'client/src/language.js',
+        'client/src/metadata.js',
+        'client/src/field-manager.js',
+        'client/src/models/user.js',
+        'client/src/models/preferences.js',
+        'client/src/model-factory.js',
+        'client/src/collection-factory.js',
+        'client/src/pre-loader.js',
+        'client/src/controllers/base.js',
+        'client/src/router.js',
+        'client/src/date-time.js',
+        'client/src/layout-manager.js',
+        'client/src/theme-manager.js',
+        'client/src/session-storage.js',
+        'client/src/view-helper.js',
+
+        'client/src/app.js'
     ];
+
+    function camelCaseToHyphen (string){
+        if (string == null) {
+            return string;
+        }
+        return string.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+    }
+
+    var fs = require('fs');
+
+    var themeList = [];
+    fs.readdirSync('application/Espo/Resources/metadata/themes').forEach(function (file) {
+        themeList.push(file.substr(0, file.length - 5));
+    });
+
+    var lessData = {};
+    themeList.forEach(function (theme) {
+        var name = camelCaseToHyphen(theme);
+        var files = {};
+        files['client/css/espo/'+name+'.css'] = 'frontend/less/'+name+'/main.less';
+        files['client/css/espo/'+name+'-iframe.css'] = 'frontend/less/'+name+'/iframe/main.less';
+        var o = {
+            options: {
+                yuicompress: true,
+            },
+            files: files
+        };
+        lessData[theme] = o;
+    });
 
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
@@ -59,89 +119,7 @@ module.exports = function (grunt) {
             start: ['build/*'],
             final: ['build/tmp'],
         },
-        less: {
-            espo: {
-                options: {
-                    yuicompress: true,
-                },
-                files: {
-                    'client/css/espo.css': 'frontend/less/espo/main.less',
-                }
-            },
-            espoVertical: {
-                options: {
-                    yuicompress: true,
-                },
-                files: {
-                    'client/css/espo-vertical.css': 'frontend/less/espo-vertical/main.less',
-                }
-            },
-            espoRtl: {
-                options: {
-                    yuicompress: true
-                },
-                files: {
-                    'client/css/espo-rtl.css': 'frontend/less/espo-rtl/main.less'
-                }
-            },
-            hazyblueVertical: {
-                options: {
-                    yuicompress: true,
-                },
-                files: {
-                    'client/css/hazyblue-vertical.css': 'frontend/less/hazyblue-vertical/main.less',
-                }
-            },
-            hazyblue: {
-                options: {
-                    yuicompress: true,
-                },
-                files: {
-                    'client/css/hazyblue.css': 'frontend/less/hazyblue/main.less',
-                }
-            },
-            sakura: {
-                options: {
-                    yuicompress: true,
-                },
-                files: {
-                    'client/css/sakura.css': 'frontend/less/sakura/main.less',
-                }
-            },
-            sakuraVertical: {
-                options: {
-                    yuicompress: true,
-                },
-                files: {
-                    'client/css/sakura-vertical.css': 'frontend/less/sakura-vertical/main.less',
-                }
-            },
-            violet: {
-                options: {
-                    yuicompress: true,
-                },
-                files: {
-                    'client/css/violet.css': 'frontend/less/violet/main.less',
-                }
-            },
-            violetVertical: {
-                options: {
-                    yuicompress: true,
-                },
-                files: {
-                    'client/css/violet-vertical.css': 'frontend/less/violet-vertical/main.less',
-                }
-            }
-        },
-        cssmin: {
-            minify: {
-                files: {
-                    'build/tmp/client/css/espo.css': [
-                        'client/css/espo.css',
-                    ]
-                }
-            },
-        },
+        less: lessData,
         uglify: {
             options: {
                 mangle: false,
@@ -167,10 +145,6 @@ module.exports = function (grunt) {
                     'custom/**'
                 ],
                 dest: 'build/tmp/client',
-            },
-            frontendHtml: {
-                src: 'frontend/reset.html',
-                dest: 'build/tmp/reset.html'
             },
             frontendLib: {
                 expand: true,
@@ -311,10 +285,8 @@ module.exports = function (grunt) {
         'clean:start',
         'mkdir:tmp',
         'less',
-        'cssmin',
         'uglify',
         'copy:frontendFolders',
-        'copy:frontendHtml',
         'copy:frontendLib',
         'copy:backend',
         'replace',

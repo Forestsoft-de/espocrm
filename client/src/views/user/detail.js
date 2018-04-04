@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -79,7 +79,7 @@ Espo.define('views/user/detail', 'views/detail', function (Dep) {
                     name: 'calendar',
                     html: this.translate('Calendar', 'scopeNames'),
                     style: 'default',
-                    link: '#Calendar/show/userId=' + this.model.id + '&userName=' + this.model.get('name'),
+                    link: '#Calendar/show/userId=' + this.model.id + '&userName=' + encodeURIComponent(this.model.get('name')),
                     hidden: !showActivities
                 });
             }
@@ -90,7 +90,7 @@ Espo.define('views/user/detail', 'views/detail', function (Dep) {
         },
 
         actionEmailAccounts: function () {
-            this.getRouter().navigate('#EmailAccount/list/userId=' + this.model.id, {trigger: true});
+            this.getRouter().navigate('#EmailAccount/list/userId=' + this.model.id + '&userName=' + encodeURIComponent(this.model.get('name')), {trigger: true});
         },
 
         actionExternalAccounts: function () {

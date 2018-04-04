@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -83,8 +83,7 @@ Espo.define('views/stream/panel', ['views/record/panels/relationship', 'lib!Text
             var clientHeight = this.$textarea.prop('clientHeight');
 
             if (clientHeight === lastHeight) return;
-
-            if (scrollHeight > clientHeight) {
+            if (scrollHeight > clientHeight + 1) {
                 this.$textarea.attr('rows', this.$textarea.prop('rows') + 1);
                 this.controlTextareaHeight(clientHeight);
             }
@@ -107,7 +106,7 @@ Espo.define('views/stream/panel', ['views/record/panels/relationship', 'lib!Text
                     if (this.$textarea.val() !== '') return;
 
                     var attachmentsIds = this.seed.get('attachmentsIds');
-                    if (!attachmentsIds.length) {
+                    if (!attachmentsIds.length && !this.getView('attachments').isUploading) {
                         this.disablePostingMode();
                     }
                 }.bind(this));
@@ -150,30 +149,13 @@ Espo.define('views/stream/panel', ['views/record/panels/relationship', 'lib!Text
             this.storageAttachmentsKey = 'stream-post-attachments-' + this.model.name + '-' + this.model.id;
 
             this.on('remove', function () {
-                if (this.$textarea && this.$textarea.size()) {
-                    var text = this.$textarea.val();
-                    if (text.length) {
-                        this.getSessionStorage().set(this.storageTextKey, text);
-                    } else {
-                        if (this.hasStoredText) {
-                            this.getSessionStorage().clear(this.storageTextKey);
-                        }
-                    }
-
-                    var attachmetIdList = this.seed.get('attachmentsIds') || [];
-
-                    if (attachmetIdList.length) {
-                        this.getSessionStorage().set(this.storageAttachmentsKey, {
-                            idList: attachmetIdList,
-                            names: this.seed.get('attachmentsNames') || {}
-                        });
-                    } else {
-                        if (this.hasStoredAttachments) {
-                            this.getSessionStorage().clear(this.storageAttachmentsKey);
-                        }
-                    }
-                }
+                this.storeControl();
+                $(window).off('beforeunload.stream-'+ this.cid);
             }, this);
+            $(window).off('beforeunload.stream-'+ this.cid);
+            $(window).on('beforeunload.stream-'+ this.cid, function () {
+                this.storeControl();
+            }.bind(this));
 
             var storedAttachments = this.getSessionStorage().get(this.storageAttachmentsKey);
 
@@ -191,6 +173,32 @@ Espo.define('views/stream/panel', ['views/record/panels/relationship', 'lib!Text
                     this.wait(false);
                 }, this);
             }, this);
+        },
+
+        storeControl: function () {
+            if (this.$textarea && this.$textarea.size()) {
+                var text = this.$textarea.val();
+                if (text.length) {
+                    this.getSessionStorage().set(this.storageTextKey, text);
+                } else {
+                    if (this.hasStoredText) {
+                        this.getSessionStorage().clear(this.storageTextKey);
+                    }
+                }
+
+                var attachmetIdList = this.seed.get('attachmentsIds') || [];
+
+                if (attachmetIdList.length) {
+                    this.getSessionStorage().set(this.storageAttachmentsKey, {
+                        idList: attachmetIdList,
+                        names: this.seed.get('attachmentsNames') || {}
+                    });
+                } else {
+                    if (this.hasStoredAttachments) {
+                        this.getSessionStorage().clear(this.storageAttachmentsKey);
+                    }
+                }
+            }
         },
 
         createCollection: function (callback, context) {
@@ -350,6 +358,11 @@ Espo.define('views/stream/panel', ['views/record/panels/relationship', 'lib!Text
             this.$textarea.prop('disabled', true);
 
             this.getModelFactory().create('Note', function (model) {
+                if (this.getView('attachments').validateReady()) {
+                    this.$textarea.prop('disabled', false)
+                    return;
+                }
+
                 if (message == '' && this.seed.get('attachmentsIds').length == 0) {
                     this.notify('Post cannot be empty', 'error');
                     this.$textarea.prop('disabled', false);

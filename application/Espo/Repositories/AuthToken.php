@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -36,4 +36,6 @@ class AuthToken extends \Espo\Core\ORM\Repositories\RDB
     protected $hooksDisabled = true;
 
     protected $processFieldsAfterSaveDisabled = true;
+
+    protected $processFieldsBeforeSaveDisabled = true;
 }

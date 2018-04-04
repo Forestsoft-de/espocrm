@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -32,11 +32,24 @@ Espo.define('views/email/fields/subject', 'views/fields/varchar', function (Dep)
         listLinkTemplate: 'email/fields/subject/list-link',
 
         data: function () {
-            return _.extend({
-                'isRead': (this.model.get('sentById') === this.getUser().id) || this.model.get('isRead'),
-                'isImportant': this.model.get('isImportant'),
-                'hasAttachment': this.model.get('hasAttachment')
-            }, Dep.prototype.data.call(this));
+            var data = Dep.prototype.data.call(this);
+
+            data.isRead = (this.model.get('sentById') === this.getUser().id) || this.model.get('isRead');
+            data.isImportant = this.model.get('isImportant');
+            data.hasAttachment = this.model.get('hasAttachment');
+
+            if (!data.isNotEmpty) {
+                if (
+                    this.model.get('name') !== null
+                    &&
+                    this.model.get('name') !== ''
+                    &&
+                    this.model.has('name')
+                ) {
+                    data.isNotEmpty = true;
+                }
+            }
+            return data;
         },
 
         getValueForDisplay: function () {

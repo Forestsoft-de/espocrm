@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -46,6 +46,8 @@ Espo.define('collection', [], function () {
 
         whereAdditional: null,
 
+        lengthCorrection: 0,
+
         _user: null,
 
         initialize: function (models, options) {
@@ -64,6 +66,11 @@ Espo.define('collection', [], function () {
         _onModelEvent: function(event, model, collection, options) {
             if (event === 'sync' && collection !== this) return;
             Backbone.Collection.prototype._onModelEvent.apply(this, arguments);
+        },
+
+        reset: function (models, options) {
+            this.lengthCorrection = 0;
+            Backbone.Collection.prototype.reset.call(this, models, options);
         },
 
         sort: function (field, asc) {
@@ -122,12 +129,20 @@ Espo.define('collection', [], function () {
                 options.data.maxSize = options.maxSize;
             }
 
-            options.data.offset = options.more ? this.length : this.offset;
+            options.data.offset = options.more ? this.length + this.lengthCorrection : this.offset;
             options.data.sortBy = this.sortBy;
             options.data.asc = this.asc;
             options.data.where = this.getWhere();
 
-            return Backbone.Collection.prototype.fetch.call(this, options);
+            this.lastXhr = Backbone.Collection.prototype.fetch.call(this, options);
+
+            return this.lastXhr;
+        },
+
+        abortLastFetch: function () {
+            if (this.lastXhr && this.lastXhr.readyState < 4) {
+                this.lastXhr.abort();
+            }
         },
 
         getWhere: function () {
@@ -136,6 +151,10 @@ Espo.define('collection', [], function () {
 
         getUser: function () {
             return this._user;
+        },
+
+        getEntityType: function () {
+            return this.name;
         }
 
     });
@@ -143,5 +162,3 @@ Espo.define('collection', [], function () {
     return Collection;
 
 });
-
-

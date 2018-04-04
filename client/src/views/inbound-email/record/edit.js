@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -33,6 +33,7 @@ Espo.define('views/inbound-email/record/edit', ['views/record/edit', 'views/inbo
         setup: function () {
             Dep.prototype.setup.call(this);
             Detail.prototype.setupFieldsBehaviour.call(this);
+            Detail.prototype.initSslFieldListening.call(this);
 
             if (Detail.prototype.wasFetched.call(this)) {
                 this.setFieldReadOnly('fetchSince');
@@ -43,11 +44,25 @@ Espo.define('views/inbound-email/record/edit', ['views/record/edit', 'views/inbo
             Detail.prototype.controlStatusField.call(this);
         },
 
-        afterRender: function () {
-            Dep.prototype.afterRender.call(this);
-            Detail.prototype.initSslFieldListening.call(this);
+        initSmtpFieldsControl: function () {
+            Detail.prototype.initSmtpFieldsControl.call(this);
         },
+
+        controlSmtpFields: function () {
+            Detail.prototype.controlSmtpFields.call(this);
+        },
+
+        controlSentFolderField: function () {
+            Detail.prototype.controlSentFolderField.call(this);
+        },
+
+        controlSmtpAuthField: function () {
+            Detail.prototype.controlSmtpAuthField.call(this);
+        },
+
+        wasFetched: function () {
+            Detail.prototype.wasFetched.call(this);
+        }
 
     });
 });
-

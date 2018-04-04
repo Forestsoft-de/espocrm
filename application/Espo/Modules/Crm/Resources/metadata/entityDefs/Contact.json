@@ -5,18 +5,20 @@
         },
         "salutationName": {
             "type": "enum",
-            "options": ["", "Mr.", "Mrs.", "Ms.", "Dr."]
+            "options": ["", "Mr.", "Ms.", "Mrs.", "Dr."]
         },
         "firstName": {
             "type": "varchar",
             "maxLength": 100,
-            "default":""
+            "default":"",
+            "trim": true
         },
         "lastName": {
             "type": "varchar",
             "maxLength": 100,
             "required": true,
-            "default":""
+            "default":"",
+            "trim": true
         },
         "accountId": {
             "type": "varchar",
@@ -88,16 +90,20 @@
             "dbType": "varchar"
         },
         "addressCity": {
-            "type": "varchar"
+            "type": "varchar",
+            "trim": true
         },
         "addressState": {
-            "type": "varchar"
+            "type": "varchar",
+            "trim": true
         },
         "addressCountry": {
-            "type": "varchar"
+            "type": "varchar",
+            "trim": true
         },
         "addressPostalCode": {
-            "type": "varchar"
+            "type": "varchar",
+            "trim": true
         },
         "account": {
             "type": "link",
@@ -109,7 +115,8 @@
             "columns": {
                 "role": "contactRole",
                 "isInactive": "contactIsInactive"
-            }
+            },
+            "orderBy": "name"
         },
         "accountRole": {
             "type": "varchar",
@@ -117,6 +124,8 @@
             "layoutDetailDisabled": true,
             "layoutMassUpdateDisabled": true,
             "layoutFiltersDisabled": true,
+            "exportDisabled": true,
+            "importDisabled": true,
             "view": "crm:views/contact/fields/account-role"
         },
         "accountIsInactive": {
@@ -154,6 +163,10 @@
             "layoutMassUpdateDisabled": true,
             "layoutListDisabled": true,
             "layoutDetailDisabled": true,
+            "customizationRequiredDisabled": true,
+            "customizationIsSortedDisabled": true,
+            "customizationAuditedDisabled": true,
+            "customizationReadOnlyDisabled": true,
             "where": {
                 "=": {
                     "leftJoins": ["opportunities"],
@@ -184,6 +197,7 @@
         "acceptanceStatus": {
             "type": "varchar",
             "notStorable": true,
+            "exportDisabled": true,
             "disabled": true
         },
         "acceptanceStatusMeetings": {
@@ -192,6 +206,7 @@
             "layoutListDisabled": true,
             "layoutDetailDisabled": true,
             "layoutMassUpdateDisabled": true,
+            "exportDisabled": true,
             "view": "crm:views/lead/fields/acceptance-status",
             "link": "meetings",
             "column": "status"
@@ -202,6 +217,7 @@
             "layoutListDisabled": true,
             "layoutDetailDisabled": true,
             "layoutMassUpdateDisabled": true,
+            "exportDisabled": true,
             "view": "crm:views/lead/fields/acceptance-status",
             "link": "calls",
             "column": "status"
@@ -251,6 +267,7 @@
             "layoutListDisabled": true,
             "layoutMassUpdateDisabled": true,
             "layoutFiltersDisabled": true,
+            "exportDisabled": true,
             "entity": "TargetList"
         },
         "portalUser": {
@@ -383,14 +400,23 @@
             "entity": "Document",
             "foreign": "contacts",
             "audited": true
+        },
+        "tasksPrimary": {
+            "type": "hasMany",
+            "entity": "Task",
+            "foreign": "contact",
+            "layoutRelationshipsDisabled": true
         }
     },
     "collection": {
-        "sortBy": "name",
-        "asc": true,
+        "sortBy": "createdAt",
+        "asc": false,
         "textFilterFields": ["name", "emailAddress"]
     },
     "indexes": {
+        "createdAt": {
+            "columns": ["createdAt", "deleted"]
+        },
         "firstName": {
             "columns": ["firstName", "deleted"]
         },

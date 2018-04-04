@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -39,7 +39,7 @@ class EmailAccount extends Record
 {
     protected $internalAttributeList = ['password', 'smtpPassword'];
 
-    protected $readOnlyAttributeList= ['fetchData'];
+    protected $readOnlyAttributeList = ['fetchData'];
 
     const PORTION_LIMIT = 10;
 
@@ -54,14 +54,14 @@ class EmailAccount extends Record
         return $this->getInjection('crypt');
     }
 
-    protected function handleInput(&$data)
+    protected function handleInput($data)
     {
         parent::handleInput($data);
-        if (array_key_exists('password', $data)) {
-            $data['password'] = $this->getCrypt()->encrypt($data['password']);
+        if (property_exists($data, 'password')) {
+            $data->password = $this->getCrypt()->encrypt($data->password);
         }
-        if (array_key_exists('smtpPassword', $data)) {
-            $data['smtpPassword'] = $this->getCrypt()->encrypt($data['smtpPassword']);
+        if (property_exists($data, 'smtpPassword')) {
+            $data->smtpPassword = $this->getCrypt()->encrypt($data->smtpPassword);
         }
     }
 
@@ -172,8 +172,8 @@ class EmailAccount extends Record
 
     public function fetchFromMailServer(Entity $emailAccount)
     {
-        if ($emailAccount->get('status') != 'Active') {
-            throw new Error();
+        if ($emailAccount->get('status') != 'Active' || !$emailAccount->get('useImap')) {
+            throw new Error("Email Account {$emailAccount->id} is not active.");
         }
 
         $importer = new \Espo\Core\Mail\Importer($this->getEntityManager(), $this->getConfig());
@@ -226,10 +226,6 @@ class EmailAccount extends Record
         $portionLimit = $this->getConfig()->get('personalEmailMaxPortionSize', self::PORTION_LIMIT);
 
         $parserName = 'MailMimeParser';
-        if (extension_loaded('mailparse')) {
-            $parserName = 'PhpMimeMailParser';
-        }
-
         if ($this->getConfig()->get('emailParser')) {
             $parserName = $this->getConfig()->get('emailParser');
         }
@@ -320,8 +316,8 @@ class EmailAccount extends Record
                 }
 
                 if (!empty($email)) {
+                    $this->getEntityManager()->getRepository('EmailAccount')->relate($emailAccount, 'emails', $email);
                     if (!$email->isFetched()) {
-                        $this->getEntityManager()->getRepository('EmailAccount')->relate($emailAccount, 'emails', $email);
                         $this->noteAboutEmail($email);
                     }
                 }
@@ -368,6 +364,7 @@ class EmailAccount extends Record
             $email = $importer->importMessage($parserName, $message, $userId, $teamIdList, $userIdList, $filterCollection, $fetchOnlyHeader, $folderData);
         } catch (\Exception $e) {
             $GLOBALS['log']->error('EmailAccount '.$emailAccount->id.' (Import Message w/ '.$parserName.'): [' . $e->getCode() . '] ' .$e->getMessage());
+            $this->getEntityManager()->getPdo()->query('UNLOCK TABLES');
         }
         return $email;
     }
@@ -383,5 +380,32 @@ class EmailAccount extends Record
         }
     }
 
-}
+    public function findAccountForUser(\Espo\Entities\User $user, $address)
+    {
+        $emailAccount = $this->getEntityManager()->getRepository('EmailAccount')->where([
+            'emailAddress' => $address,
+            'assignedUserId' => $user->id,
+            'active' => true
+        ])->findOne();
 
+        return $emailAccount;
+    }
+
+    public function getSmtpParamsFromAccount(\Espo\Entities\EmailAccount $emailAccount)
+    {
+        $smtpParams = array();
+        $smtpParams['server'] = $emailAccount->get('smtpHost');
+        if ($smtpParams['server']) {
+            $smtpParams['port'] = $emailAccount->get('smtpPort');
+            $smtpParams['auth'] = $emailAccount->get('smtpAuth');
+            $smtpParams['security'] = $emailAccount->get('smtpSecurity');
+            $smtpParams['username'] = $emailAccount->get('smtpUsername');
+            $smtpParams['password'] = $emailAccount->get('smtpPassword');
+            if (array_key_exists('password', $smtpParams)) {
+                $smtpParams['password'] = $this->getCrypt()->decrypt($smtpParams['password']);
+            }
+            return $smtpParams;
+        }
+        return;
+    }
+}

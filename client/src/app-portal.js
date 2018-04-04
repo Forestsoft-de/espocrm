@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -35,7 +35,7 @@ Espo.define('app-portal', ['app', 'acl-portal-manager'], function (Dep, AclPorta
         masterView: 'views/site-portal/master',
 
         createAclManager: function () {
-            return new AclPortalManager(this.user);
+            return new AclPortalManager(this.user, null, this.settings.get('aclAllowDeleteCreated'));
         },
 
     });

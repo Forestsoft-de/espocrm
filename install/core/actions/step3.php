@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -25,23 +25,23 @@
  *
  * In accordance with Section 7(b) of the GNU General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
- ************************************************************************/ 
+ ************************************************************************/
 
 $fields = array(
-	'user-name' => array(
-		'default' => (isset($langs['labels']['admin']))? $langs['labels']['admin'] : 'admin',
-	),
-	'user-pass' => array(),
-	'user-confirm-pass' => array(),
+    'user-name' => array(
+        'default' => (isset($langs['labels']['admin']))? $langs['labels']['admin'] : 'admin',
+    ),
+    'user-pass' => array(),
+    'user-confirm-pass' => array(),
 );
 
 foreach ($fields as $fieldName => $field) {
-	if (isset($_SESSION['install'][$fieldName])) {
-		$fields[$fieldName]['value'] = $_SESSION['install'][$fieldName];
-	}
-	else {
-		$fields[$fieldName]['value'] = (isset($fields[$fieldName]['default']))? $fields[$fieldName]['default'] : '';
-	}
+    if (isset($_SESSION['install'][$fieldName])) {
+        $fields[$fieldName]['value'] = $_SESSION['install'][$fieldName];
+    }
+    else {
+        $fields[$fieldName]['value'] = (isset($fields[$fieldName]['default']))? $fields[$fieldName]['default'] : '';
+    }
 }
 
 $smarty->assign('fields', $fields);

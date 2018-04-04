@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -25,18 +25,18 @@
  * In accordance with Section 7(b) of the GNU General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
  ************************************************************************/
-var Espo = Espo || {};
 
-describe("Cache", function () {
+describe('cache', function () {
 	var cache;
 
-	beforeEach(function () {
-		cache = new Espo.Cache();
+	beforeEach(function (done) {
+        require('cache', function (Cache) {
+		  cache = new Cache();
+          done();
+        });
 	});
 
 	it('should have \'cache\' prefix', function () {
-		expect(cache._prefix).toBe('cache');
+		expect(cache.prefix).toBe('cache');
 	});
-
-
 });

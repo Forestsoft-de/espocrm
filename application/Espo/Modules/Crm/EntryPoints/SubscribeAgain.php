@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -113,9 +113,19 @@ class SubscribeAgain extends \Espo\Core\EntryPoints\Base
                                 $this->getHookManager()->process('TargetList', 'afterCancelOptOut', $targetList, [], $hookData);
                             }
                         }
-                        echo $this->getLanguage()->translate('subscribedAgain', 'messages', 'Campaign');
-                        echo '<br><br>';
-                        echo '<a href="?entryPoint=unsubscribe&id='.$queueItemId.'">' . $this->getLanguage()->translate('Unsubscribe again', 'labels', 'Campaign') . '</a>';
+
+                        $data = [
+                            'queueItemId' => $queueItemId
+                        ];
+
+                        $runScript = "
+                            Espo.require('crm:controllers/unsubscribe', function (Controller) {
+                                var controller = new Controller(app.baseController.params, app.getControllerInjection());
+                                controller.masterView = app.masterView;
+                                controller.doAction('subscribeAgain', ".json_encode($data).");
+                            });
+                        ";
+                        $this->getClientManager()->display($runScript);
                     }
                 }
             }

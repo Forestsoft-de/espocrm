@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -56,8 +56,19 @@ class FormatType extends \Espo\Core\Formula\Functions\Base
         if (count($item->value) > 1) {
             $decimals = $this->evaluate($item->value[1]);
         }
+
+        $decimalMark = null;
+        if (count($item->value) > 2) {
+            $decimalMark = $this->evaluate($item->value[2]);
+        }
+
+        $thousandSeparator = null;
+        if (count($item->value) > 3) {
+            $thousandSeparator = $this->evaluate($item->value[3]);
+        }
+
         $value = $this->evaluate($item->value[0]);
 
-        return $this->getInjection('number')->format($value, $decimals);
+        return $this->getInjection('number')->format($value, $decimals, $decimalMark, $thousandSeparator);
     }
 }

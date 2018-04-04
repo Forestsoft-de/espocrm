@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -64,7 +64,7 @@ class Email extends \Espo\Core\ORM\Repositories\RDB
 
     protected function addUserByEmailAddressId(Entity $entity, $emailAddressId, $addAssignedUser = false)
     {
-        $user = $this->getEntityManager()->getRepository('EmailAddress')->getEntityByAddressId($emailAddressId, 'User');
+        $user = $this->getEntityManager()->getRepository('EmailAddress')->getEntityByAddressId($emailAddressId, 'User', true);
         if ($user) {
             $entity->addLinkMultipleId('users', $user->id);
             if ($addAssignedUser) {
@@ -77,6 +77,8 @@ class Email extends \Espo\Core\ORM\Repositories\RDB
     {
         if ($entity->get('fromEmailAddressName')) {
             $entity->set('from', $entity->get('fromEmailAddressName'));
+        } else {
+            $entity->set('from', null);
         }
     }
 
@@ -183,6 +185,10 @@ class Email extends \Espo\Core\ORM\Repositories\RDB
 
     protected function beforeSave(Entity $entity, array $options = array())
     {
+        if ($entity->isNew() && !$entity->get('messageId')) {
+            $entity->setDummyMessageId();
+        }
+
         $eaRepository = $this->getEntityManager()->getRepository('EmailAddress');
 
         if ($entity->has('attachmentsIds')) {
@@ -206,7 +212,7 @@ class Email extends \Espo\Core\ORM\Repositories\RDB
                         $this->addUserByEmailAddressId($entity, $ids[0], true);
 
                         if (!$entity->get('sentById')) {
-                            $user = $this->getEntityManager()->getRepository('EmailAddress')->getEntityByAddressId($entity->get('fromEmailAddressId'), 'User');
+                            $user = $this->getEntityManager()->getRepository('EmailAddress')->getEntityByAddressId($entity->get('fromEmailAddressId'), 'User', true);
                             if ($user) {
                                 $entity->set('sentById', $user->id);
                             }
@@ -243,17 +249,23 @@ class Email extends \Espo\Core\ORM\Repositories\RDB
             $entity->setLinkMultipleColumn('users', 'isRead', $entity->get('createdById'), true);
         }
 
+        if (!$entity->isNew() && $entity->isAttributeChanged('parentId')) {
+            $entity->set('accountId', null);
+        }
+
         $parentId = $entity->get('parentId');
         $parentType = $entity->get('parentType');
-        if (!empty($parentId) || !empty($parentType)) {
+        if ($parentId && $parentType) {
             $parent = $this->getEntityManager()->getEntity($parentType, $parentId);
-            if (!empty($parent)) {
+            if ($parent) {
+                $accountId = null;
                 if ($parent->getEntityType() == 'Account') {
                     $accountId = $parent->id;
-                } else if ($parent->has('accountId')) {
+                }
+                if (!$accountId && $parent->get('accountId') && $parent->getRelationParam('account', 'entity') == 'Account') {
                     $accountId = $parent->get('accountId');
                 }
-                if (!empty($accountId)) {
+                if ($accountId) {
                     $account = $this->getEntityManager()->getEntity('Account', $accountId);
                     if ($account) {
                         $entity->set('accountId', $accountId);
@@ -291,7 +303,7 @@ class Email extends \Espo\Core\ORM\Repositories\RDB
     {
         parent::afterSave($entity, $options);
         if (!$entity->isNew()) {
-            if ($entity->get('parentType') && $entity->get('parentId') && $entity->isFieldChanged('parentId')) {
+            if ($entity->get('parentType') && $entity->get('parentId') && $entity->isAttributeChanged('parentId')) {
                 $replyList = $this->findRelated($entity, 'replies');
                 foreach ($replyList as $reply) {
                     if ($reply->id === $entity->id) continue;
@@ -320,8 +332,8 @@ class Email extends \Espo\Core\ORM\Repositories\RDB
             }
         }
 
-        if ($entity->get('isBeingImportered')) {
-            $entity->set('isBeingImportered', false);
+        if ($entity->get('isBeingImported')) {
+            $entity->set('isBeingImported', false);
         }
     }
 

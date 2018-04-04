@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -101,6 +101,8 @@ class Activities extends \Espo\Core\Controllers\Base
 
         $entityTypeList = $request->get('entityTypeList');
 
+        $futureDays = intval($request->get('futureDays'));
+
         if (empty($maxSize)) {
             $maxSize = $this->maxSizeLimit;
         }
@@ -111,7 +113,7 @@ class Activities extends \Espo\Core\Controllers\Base
         return $service->getUpcomingActivities($userId, array(
             'offset' => $offset,
             'maxSize' => $maxSize
-        ), $entityTypeList);
+        ), $entityTypeList, $futureDays);
     }
 
     public function actionPopupNotifications()
@@ -127,10 +129,10 @@ class Activities extends \Espo\Core\Controllers\Base
             throw new BadRequest();
         }
 
-        if (empty($data['id'])) {
+        if (empty($data->id)) {
             throw new BadRequest();
         }
-        $id = $data['id'];
+        $id = $data->id;
 
         return $this->getService('Activities')->removeReminder($id);
     }

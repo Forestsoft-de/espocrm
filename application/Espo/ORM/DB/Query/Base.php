@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -52,6 +52,8 @@ abstract class Base
         'aggregation',
         'aggregationBy',
         'groupBy',
+        'havingClause',
+        'customHaving',
         'skipTextColumns',
         'maxTextColumnsLength'
     );
@@ -86,6 +88,7 @@ abstract class Base
         'WEEK',
         'WEEK_0',
         'WEEK_1',
+        'DAYOFMONTH',
         'DAYOFWEEK',
         'DAYOFWEEK_NUMBER',
         'MONTH_NUMBER',
@@ -120,17 +123,17 @@ abstract class Base
         $this->pdo = $pdo;
     }
 
-    protected function getSeed($entityName)
+    protected function getSeed($entityType)
     {
-        if (empty($this->seedCache[$entityName])) {
-            $this->seedCache[$entityName] = $this->entityFactory->create($entityName);
+        if (empty($this->seedCache[$entityType])) {
+            $this->seedCache[$entityType] = $this->entityFactory->create($entityType);
         }
-        return $this->seedCache[$entityName];
+        return $this->seedCache[$entityType];
     }
 
-    public function createSelectQuery($entityName, array $params = array(), $deleted = false)
+    public function createSelectQuery($entityType, array $params = array(), $deleted = false)
     {
-        $entity = $this->getSeed($entityName);
+        $entity = $this->getSeed($entityType);
 
         foreach (self::$selectParamList as $k) {
             $params[$k] = array_key_exists($k, $params) ? $params[$k] : null;
@@ -156,6 +159,12 @@ abstract class Base
         }
 
         $wherePart = $this->getWhere($entity, $whereClause, 'AND', $params);
+
+        $havingClause = $params['havingClause'];
+        $havingPart = '';
+        if (!empty($havingClause)) {
+            $havingPart = $this->getWhere($entity, $havingClause, 'AND', $params);
+        }
 
         if (empty($params['aggregation'])) {
             $selectPart = $this->getSelect($entity, $params['select'], $params['distinct'], $params['skipTextColumns'], $params['maxTextColumnsLength']);
@@ -183,9 +192,18 @@ abstract class Base
 
         $joinsPart = $this->getBelongsToJoins($entity, $params['select'], array_merge($params['joins'], $params['leftJoins']));
 
-
         if (!empty($params['customWhere'])) {
-            $wherePart .= ' ' . $params['customWhere'];
+            if (!empty($wherePart)) {
+                $wherePart .= ' ';
+            }
+            $wherePart .= $params['customWhere'];
+        }
+
+        if (!empty($params['customHaving'])) {
+            if (!empty($havingPart)) {
+                $havingPart .= ' ';
+            }
+            $havingPart .= $params['customHaving'];
         }
 
         if (!empty($params['joins']) && is_array($params['joins'])) {
@@ -227,15 +245,18 @@ abstract class Base
         }
 
         if (empty($params['aggregation'])) {
-            $sql = $this->composeSelectQuery($this->toDb($entity->getEntityType()), $selectPart, $joinsPart, $wherePart, $orderPart, $params['offset'], $params['limit'], $params['distinct'], null, $groupByPart);
+            $sql = $this->composeSelectQuery($this->toDb($entity->getEntityType()), $selectPart, $joinsPart, $wherePart, $orderPart, $params['offset'], $params['limit'], $params['distinct'], null, $groupByPart, $havingPart);
         } else {
-            $sql = $this->composeSelectQuery($this->toDb($entity->getEntityType()), $selectPart, $joinsPart, $wherePart, null, null, null, false, $params['aggregation']);
+            $sql = $this->composeSelectQuery($this->toDb($entity->getEntityType()), $selectPart, $joinsPart, $wherePart, null, null, null, false, $params['aggregation'], $groupByPart, $havingPart);
+            if ($params['aggregation'] === 'COUNT' && $groupByPart && $havingPart) {
+                $sql = "SELECT COUNT(*) AS `AggregateValue` FROM ({$sql}) AS `countAlias`";
+            }
         }
 
         return $sql;
     }
 
-    protected function getFunctionPart($function, $part, $entityName, $distinct = false)
+    protected function getFunctionPart($function, $part, $entityType, $distinct = false)
     {
         if (!in_array($function, $this->functionList)) {
             throw new \Exception("Not allowed function '".$function."'.");
@@ -249,12 +270,12 @@ abstract class Base
             case 'WEEK_0':
                 return "CONCAT(YEAR({$part}), '/', WEEK({$part}, 0))";
             case 'WEEK_1':
-                return "CONCAT(YEAR({$part}), '/', WEEK({$part}, 1))";
+                return "CONCAT(YEAR({$part}), '/', WEEK({$part}, 5))";
             case 'MONTH_NUMBER':
                 $function = 'MONTH';
                 break;
             case 'DATE_NUMBER':
-                $function = 'DATE';
+                $function = 'DAYOFMONTH';
                 break;
             case 'YEAR_NUMBER':
                 $function = 'YEAR';
@@ -265,7 +286,7 @@ abstract class Base
             case 'WEEK_NUMBER_0':
                 return "WEEK({$part}, 0)";
             case 'WEEK_NUMBER_1':
-                return "WEEK({$part}, 1)";
+                return "WEEK({$part}, 5)";
             case 'HOUR_NUMBER':
                 $function = 'HOUR';
                 break;
@@ -277,7 +298,7 @@ abstract class Base
                 break;
         }
         if ($distinct) {
-            $idPart = $this->toDb($entityName) . ".id";
+            $idPart = $this->toDb($entityType) . ".id";
             switch ($function) {
                 case 'SUM':
                 case 'COUNT':
@@ -914,11 +935,11 @@ abstract class Base
         if (is_array($value)) {
             $arr = [];
             foreach ($value as $v) {
-                $arr[] = $this->pdo->quote($v);
+                $arr[] = $this->quote($v);
             }
             $stringValue = '(' . implode(', ', $arr) . ')';
         } else {
-            $stringValue = $this->pdo->quote($value);
+            $stringValue = $this->quote($value);
         }
         return $stringValue;
     }
@@ -1091,7 +1112,7 @@ abstract class Base
         return false;
     }
 
-    public function composeSelectQuery($table, $select, $joins = '', $where = '', $order = '', $offset = null, $limit = null, $distinct = null, $aggregation = false, $groupBy = null)
+    public function composeSelectQuery($table, $select, $joins = '', $where = '', $order = '', $offset = null, $limit = null, $distinct = null, $aggregation = false, $groupBy = null, $having = null)
     {
         $sql = "SELECT";
 
@@ -1111,6 +1132,10 @@ abstract class Base
 
         if (!empty($groupBy)) {
             $sql .= " GROUP BY {$groupBy}";
+        }
+
+        if (!empty($having)) {
+            $sql .= " HAVING {$having}";
         }
 
         if (!empty($order)) {

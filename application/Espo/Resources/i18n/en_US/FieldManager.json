@@ -1,6 +1,9 @@
 {
     "labels": {
-        "Dynamic Logic": "Dynamic Logic"
+        "Dynamic Logic": "Dynamic Logic",
+        "Name": "Name",
+        "Label": "Label",
+        "Type": "Type"
     },
     "options": {
         "dateTimeDefault": {
@@ -70,7 +73,8 @@
         "maxLength": "Max acceptable length of text.",
         "before": "The date value should be before the date value of the specified field.",
         "after": "The date value should be after the date value of the specified field.",
-        "readOnly": "Field value can't be specified by user. But can be calculated by formula."
+        "readOnly": "Field value can't be specified by user. But can be calculated by formula.",
+        "maxFileSize": "If empty or 0 then no limit."
     },
     "fieldParts": {
         "address": {
@@ -87,7 +91,8 @@
             "last": "Last"
         },
         "currency": {
-            "converted": "(Converted)"
+            "converted": "(Converted)",
+            "currency": "(Currency)"
         },
         "datetimeOptional": {
             "date": "Date"

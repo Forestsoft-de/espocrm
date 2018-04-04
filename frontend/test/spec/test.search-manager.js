@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -25,20 +25,20 @@
  * In accordance with Section 7(b) of the GNU General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
  ************************************************************************/
-var Espo = Espo || {};
 
 
-describe("SearchManager", function () {
+describe("search-manager", function () {
 	var searchManager;
-	
+
 	beforeEach(function () {
-		var collection = {
-			name: 'some',
-		}		
-		searchManager = new Espo.SearchManager(collection, 'list', null);		
+		require('search-manager', function (SearchManager) {
+			var collection = {
+				name: 'some',
+			}
+			searchManager = new SearchManager(collection, 'list', null);
+			done();
+		}
 	});
-		
-	
 
 
 });

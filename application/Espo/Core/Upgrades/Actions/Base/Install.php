@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -73,10 +73,12 @@ class Install extends \Espo\Core\Upgrades\Actions\Base
         }
 
         /* run before install script */
-        $this->runScript('before');
+        if (!isset($data['skipBeforeScript']) || !$data['skipBeforeScript']) {
+            $this->runScript('before');
+        }
 
         /* remove files defined in a manifest "deleteBeforeCopy" */
-        $this->deleteBeforeCopy(true);
+        $this->deleteFiles('deleteBeforeCopy', true);
 
         /* copy files from directory "Files" to EspoCRM files */
         if (!$this->copyFiles()) {
@@ -84,10 +86,15 @@ class Install extends \Espo\Core\Upgrades\Actions\Base
         }
 
         /* remove files defined in a manifest */
-        $this->deleteFiles(true);
+        $this->deleteFiles('delete', true);
 
-        if (!$this->systemRebuild()) {
-            $this->throwErrorAndRemovePackage('Error occurred while EspoCRM rebuild.');
+        $this->deleteFiles('vendor');
+        $this->copyFiles('vendor');
+
+        if (!isset($data['skipSystemRebuild']) || !$data['skipSystemRebuild']) {
+            if (!$this->systemRebuild()) {
+                $this->throwErrorAndRemovePackage('Error occurred while EspoCRM rebuild.');
+            }
         }
 
         //afterInstallFiles
@@ -96,7 +103,9 @@ class Install extends \Espo\Core\Upgrades\Actions\Base
         }
 
         /* run before install script */
-        $this->runScript('after');
+        if (!isset($data['skipAfterScript']) || !$data['skipAfterScript']) {
+            $this->runScript('after');
+        }
 
         $this->afterRunAction();
 

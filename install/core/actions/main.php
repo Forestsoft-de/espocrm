@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -30,17 +30,17 @@
 $config = $installer->getConfig();
 
 $fields = array(
-	'user-lang' => array(
-		'default' => $config->get('language', 'en_US'),
-	),
+    'user-lang' => array(
+        'default' => $config->get('language', 'en_US'),
+    ),
 );
 
 foreach ($fields as $fieldName => $field) {
-	if (isset($_SESSION['install'][$fieldName])) {
-		$fields[$fieldName]['value'] = $_SESSION['install'][$fieldName];
-	} else {
-		$fields[$fieldName]['value'] = (isset($field['default']))? $field['default'] : '';
-	}
+    if (isset($_SESSION['install'][$fieldName])) {
+        $fields[$fieldName]['value'] = $_SESSION['install'][$fieldName];
+    } else {
+        $fields[$fieldName]['value'] = (isset($field['default']))? $field['default'] : '';
+    }
 }
 
 $smarty->assign('fields', $fields);

@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -42,8 +42,18 @@ Espo.define('views/email/list', 'views/list', function (Dep) {
 
         defaultFolderId: 'inbox',
 
+        keepCurrentRootUrl: true,
+
         setup: function () {
             Dep.prototype.setup.call(this);
+
+            if (this.getAcl().checkScope('EmailAccountScope')) {
+                this.addMenuItem('dropdown', {
+                    name: 'reply',
+                    label: 'Email Accounts',
+                    link: '#EmailAccount/list/userId=' + this.getUser().id + '&userName=' +  encodeURIComponent(this.getUser().get('name'))
+                });
+            }
 
             if (this.getUser().isAdmin()) {
                 this.menu.dropdown.push({
@@ -106,6 +116,7 @@ Espo.define('views/email/list', 'views/list', function (Dep) {
         },
 
         loadFolders: function () {
+            var xhr = null;
             this.getFolderCollection(function (collection) {
                 this.createView('folders', 'views/email-folder/list-side', {
                     collection: collection,
@@ -119,16 +130,23 @@ Espo.define('views/email/list', 'views/list', function (Dep) {
                         this.selectedFolderId = id;
                         this.applyFolder();
 
+                        if (xhr && xhr.readyState < 4) {
+                            xhr.abort();
+                        }
+
                         this.notify('Please wait...');
-                        this.collection.fetch().then(function () {
-                            this.notify(false);
-                        }.bind(this));
+                        xhr = this.collection.fetch({
+                            success: function () {
+                                this.notify(false);
+                            }.bind(this)
+                        });
 
                         if (id !== this.defaultFolderId) {
                             this.getRouter().navigate('#Email/list/folder=' + id);
                         } else {
                             this.getRouter().navigate('#Email');
                         }
+                        this.updateLastUrl();
                     }, this);
                 }, this);
             }, this);
@@ -139,7 +157,13 @@ Espo.define('views/email/list', 'views/list', function (Dep) {
         },
 
         applyRoutingParams: function (params) {
-            var id = params.folder || 'inbox';
+            var id;
+
+            if ('folder' in params) {
+                id = params.folder || 'inbox';
+            } else {
+                return;
+            }
 
             if (!params.isReturnThroughLink && id !== this.selectedFolderId) {
                 var foldersView = this.getView('folders');
@@ -153,4 +177,3 @@ Espo.define('views/email/list', 'views/list', function (Dep) {
 
     });
 });
-

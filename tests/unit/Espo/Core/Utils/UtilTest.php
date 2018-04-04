@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@ namespace tests\Espo\Core\Utils;
 
 use Espo\Core\Utils\Util;
 
-class UtilTest extends \PHPUnit_Framework_TestCase
+class UtilTest extends \PHPUnit\Framework\TestCase
 {
     public function testGetSeparator()
     {
@@ -1435,6 +1435,38 @@ class UtilTest extends \PHPUnit_Framework_TestCase
         $this->assertNull(Util::getValueByKey($inputArray, 'fields.varchar.hookClassName'));
         $this->assertNull(Util::getValueByKey($inputArray, ['fields', 'varchar', 'hookClassName']));
         $this->assertEquals('customReturns', Util::getValueByKey($inputArray, 'Contact.notExists', 'customReturns'));
+    }
+
+    public function testGetValueByKeyWithObjects()
+    {
+        $inputObject = (object) [
+            'Account' => (object) [
+                'useCache' => true,
+                'sub' =>  (object) [
+                    'subV' => '125',
+                    'subO' => (object) [
+                        'subOV' => '125',
+                        'subOV2' => '125',
+                    ],
+                ],
+            ],
+            'Contact' => (object) [
+                'useCache' => true,
+            ],
+        ];
+
+        $this->assertEquals($inputObject, Util::getValueByKey($inputObject));
+        $this->assertEquals($inputObject, Util::getValueByKey($inputObject, ''));
+
+        $this->assertEquals('125', Util::getValueByKey($inputObject, 'Account.sub.subV'));
+
+        $result = (object) ['useCache' => true];
+        $this->assertEquals($result, Util::getValueByKey($inputObject, 'Contact'));
+
+        $this->assertNull(Util::getValueByKey($inputObject, 'Contact.notExists'));
+
+        $this->assertEquals('customReturns', Util::getValueByKey($inputObject, 'Contact.notExists', 'customReturns'));
+        $this->assertNotEquals('customReturns', Util::getValueByKey($inputObject, 'Contact.useCache', 'customReturns'));
     }
 
     public function testUnsetInArrayByValue()

@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -223,7 +223,7 @@ Espo.define('views/fields/base', 'view', function (Dep) {
 
             this.mode = this.options.mode || this.mode;
 
-            this.readOnly = this.readOnly || this.params.readOnly || this.model.getFieldParam(this.name, 'readOnly');
+            this.readOnly = this.readOnly || this.params.readOnly || this.model.getFieldParam(this.name, 'readOnly') || this.model.getFieldParam(this.name, 'clientReadOnly');
             this.readOnlyLocked = this.options.readOnlyLocked || this.readOnly;
             this.inlineEditDisabled = this.options.inlineEditDisabled || this.params.inlineEditDisabled || this.inlineEditDisabled;
             this.readOnly = this.readOnlyLocked || this.options.readOnly || false;
@@ -268,7 +268,7 @@ Espo.define('views/fields/base', 'view', function (Dep) {
                         this.hideRequiredSign();
                     }
                 } else {
-                    if (!this.hasRequiredMarker()) {
+                    if (this.hasRequiredMarker()) {
                         this.hideRequiredSign();
                     }
                 }
@@ -526,10 +526,17 @@ Espo.define('views/fields/base', 'view', function (Dep) {
             this.trigger('inline-edit-on');
         },
 
-        showValidationMessage: function (message, selector) {
-            selector = selector || '.main-element';
+        showValidationMessage: function (message, target) {
+            var $el;
 
-            var $el = this.$el.find(selector);
+            target = target || '.main-element';
+
+            if (typeof target === 'string' || target instanceof String) {
+                $el = this.$el.find(target);
+            } else {
+                $el = $(target);
+            }
+
             if (!$el.size() && this.$element) {
                 $el = this.$element;
             }
@@ -537,7 +544,7 @@ Espo.define('views/fields/base', 'view', function (Dep) {
                 placement: 'bottom',
                 container: 'body',
                 content: message,
-                trigger: 'manual',
+                trigger: 'manual'
             }).popover('show');
 
             $el.closest('.field').one('mousedown click', function () {

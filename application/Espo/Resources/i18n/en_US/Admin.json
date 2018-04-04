@@ -32,6 +32,7 @@
         "Layout Manager": "Layout Manager",
         "User Interface": "User Interface",
         "Auth Tokens": "Auth Tokens",
+        "Auth Log": "Auth Log",
         "Authentication": "Authentication",
         "Currency": "Currency",
         "Integrations": "Integrations",
@@ -63,6 +64,11 @@
         "detail": "Detail",
         "listSmall": "List (Small)",
         "detailSmall": "Detail (Small)",
+        "detailPortal": "Detail (Portal)",
+        "detailSmallPortal": "Detail (Small, Portal)",
+        "listSmallPortal": "List (Small, Portal)",
+        "listPortal": "List (Portal)",
+        "relationshipsPortal": "Relationship Panels (Portal)",
         "filters": "Search Filters",
         "massUpdate": "Mass Update",
         "relationships": "Relationship Panels",
@@ -90,11 +96,10 @@
         "enumInt": "Enum Integer",
         "enumFloat": "Enum Float",
         "float": "Float",
-        "int": "Int",
+        "int": "Integer",
         "link": "Link",
         "linkMultiple": "Link Multiple",
         "linkParent": "Link Parent",
-        "multienim": "Multienum",
         "phone": "Phone",
         "text": "Text",
         "url": "Url",
@@ -108,7 +113,7 @@
         "rangeCurrency": "Range Currency",
         "wysiwyg": "Wysiwyg",
         "map": "Map",
-        "number": "Number",
+        "number": "Number (auto-increment)",
         "colorpicker": "Color Picker"
     },
     "fields": {
@@ -151,7 +156,8 @@
         "dynamicLogicRequired": "Conditions making field required",
         "dynamicLogicOptions": "Conditional options",
         "probabilityMap": "Stage Probabilities (%)",
-        "readOnly": "Read-only"
+        "readOnly": "Read-only",
+        "maxFileSize": "Max File Size (Mb)"
     },
     "messages": {
         "upgradeVersion": "EspoCRM will be upgraded to version <strong>{version}</strong>. Please be patient as this may take a while.",
@@ -166,9 +172,10 @@
         "selectExtensionPackage": "Select extension package",
         "extensionInstalled": "Extension {name} {version} has been installed.",
         "installExtension": "Extension {name} {version} is ready for an installation.",
-        "cronIsNotConfigured": "Scheduled jobs are not running. Please follow the <a target=\"_blank\" href=\"https://www.espocrm.com/documentation/administration/server-configuration/#user-content-setup-a-crontab\">instructions</a> to setup cron job.",
+        "cronIsNotConfigured": "Scheduled jobs are not running.  Hence inbound emails, notifications and reminders are not working. Please follow the <a target=\"_blank\" href=\"https://www.espocrm.com/documentation/administration/server-configuration/#user-content-setup-a-crontab\">instructions</a> to setup cron job.",
         "newVersionIsAvailable": "New EspoCRM version {latestVersion} is available.",
-        "newExtensionVersionIsAvailable": "New release {latestVersion} of {extensionName} is available."
+        "newExtensionVersionIsAvailable": "New release {latestVersion} of {extensionName} is available.",
+        "uninstallConfirmation": "Are you sure you want to uninstall the extension?"
     },
     "descriptions": {
         "settings": "System settings of application.",
@@ -199,7 +206,8 @@
         "inboundEmails": "Settings for incoming emails.",
         "emailFilters": "Email messages that match the specified filter won't be imported.",
         "actionHistory": "Log of user actions.",
-        "labelManager": "Customize application labels."
+        "labelManager": "Customize application labels.",
+        "authLog": "Login history."
     },
     "options": {
         "previewSize": {

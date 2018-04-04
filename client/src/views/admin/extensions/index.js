@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -36,7 +36,7 @@ Espo.define('views/admin/extensions/index', 'view', function (Dep) {
 
         events: {
             'change input[name="package"]': function (e) {
-                this.$el.find('button[data-action="upload"]').addClass('disabled');
+                this.$el.find('button[data-action="upload"]').addClass('disabled').attr('disabled', 'disabled');
                 this.$el.find('.message-container').html('');
                 var files = e.currentTarget.files;
                 if (files.length) {
@@ -91,7 +91,7 @@ Espo.define('views/admin/extensions/index', 'view', function (Dep) {
 
                 this.wait(true);
                 this.listenToOnce(collection, 'sync', function () {
-                    this.createView('list', 'Extension.Record.List', {
+                    this.createView('list', 'views/extension/record/list', {
                         collection: collection,
                         el: this.options.el + ' > .list-container',
                     });
@@ -112,7 +112,7 @@ Espo.define('views/admin/extensions/index', 'view', function (Dep) {
             var fileReader = new FileReader();
             fileReader.onload = function (e) {
                 this.packageContents = e.target.result;
-                this.$el.find('button[data-action="upload"]').removeClass('disabled');
+                this.$el.find('button[data-action="upload"]').removeClass('disabled').removeAttr('disabled');
             }.bind(this);
             fileReader.readAsDataURL(file);
         },
@@ -133,7 +133,7 @@ Espo.define('views/admin/extensions/index', 'view', function (Dep) {
         },
 
         upload: function () {
-            this.$el.find('button[data-action="upload"]').addClass('disabled');
+            this.$el.find('button[data-action="upload"]').addClass('disabled').attr('disabled', 'disabled');
             this.notify('Uploading...');
             $.ajax({
                 url: 'Extension/action/upload',
@@ -151,11 +151,11 @@ Espo.define('views/admin/extensions/index', 'view', function (Dep) {
                     return;
                 }
                 this.notify(false);
-                this.createView('popup', 'Admin.Extensions.Ready', {
+                this.createView('popup', 'views/admin/extensions/ready', {
                     upgradeData: data
                 }, function (view) {
                     view.render();
-                    this.$el.find('button[data-action="upload"]').removeClass('disabled');
+                    this.$el.find('button[data-action="upload"]').removeClass('disabled').removeAttr('disabled');
 
                     view.once('run', function () {
                         view.close();
@@ -191,7 +191,7 @@ Espo.define('views/admin/extensions/index', 'view', function (Dep) {
                 if (cache) {
                     cache.clear();
                 }
-                this.createView('popup', 'Admin.Extensions.Done', {
+                this.createView('popup', 'views/admin/extensions/done', {
                     version: version,
                     name: name
                 }, function (view) {

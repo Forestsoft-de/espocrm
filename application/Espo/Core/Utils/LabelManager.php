@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -109,6 +109,28 @@ class LabelManager extends \Espo\Core\Injectable
             if (!array_key_exists('Create ' . $scope, $data['labels'])) {
                 $data['labels']['Create ' . $scope] = '';
             }
+        }
+
+        foreach ($this->getMetadata()->get(['entityDefs', $scope, 'fields'], []) as $field => $item) {
+            if (!$this->getMetadata()->get(['entityDefs', $scope, 'fields', $field, 'options'])) continue;
+            $optionsData = array();
+            $optionList = $this->getMetadata()->get(['entityDefs', $scope, 'fields', $field, 'options'], []);
+            if (!array_key_exists('options', $data)) {
+                $data['options'] = array();
+            }
+            if (!array_key_exists($field, $data['options'])) {
+                $data['options'][$field] = array();
+            }
+            foreach ($optionList as $option) {
+                if (empty($option)) continue;
+                $optionsData[$option] = $option;
+                if (array_key_exists($option, $data['options'][$field])) {
+                    if (!empty($data['options'][$field][$option])) {
+                        $optionsData[$option] = $data['options'][$field][$option];
+                    }
+                }
+            }
+            $data['options'][$field] = $optionsData;
         }
 
         if ($scope === 'Global') {

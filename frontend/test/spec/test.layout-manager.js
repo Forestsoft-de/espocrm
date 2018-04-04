@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -25,27 +25,21 @@
  * In accordance with Section 7(b) of the GNU General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
  ************************************************************************/
-var Espo = Espo || {};
 
-describe("LayoutManager", function () {		
+describe('layout-manager', function () {
 	var layoutManager;
-	
-	beforeEach(function () {		
-		layoutManager = new Espo.LayoutManager();	
-		spyOn(layoutManager, 'ajax').andCallFake(function (options) {
-		});	
+
+	beforeEach(function (done) {
+		require('layout-manager', function (LayoutManager) {
+			layoutManager = new LayoutManager();
+			spyOn(layoutManager, 'ajax').and.callFake(function (options) {});
+
+			done();
+		});
 	});
-	
-	
+
 	it("should call ajax to fetch new layout", function () {
 		layoutManager.get('some', 'list');
-		
-		expect(layoutManager.ajax.mostRecentCall.args[0].url).toBe('some/layout/list');
-		
-		
-
-		
+		expect(layoutManager.ajax.calls.mostRecent().args[0].url).toBe('some/layout/list');
 	});
-	
-	
 });

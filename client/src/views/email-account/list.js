@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -32,34 +32,38 @@ Espo.define('views/email-account/list', 'views/list', function (Dep) {
 
         createButton: false,
 
+        keepCurrentRootUrl: true,
+
         setup: function () {
             Dep.prototype.setup.call(this);
 
             this.menu.buttons.unshift({
-                action: 'createEmailAccount',
+                action: 'create',
                 label: 'Create ' +  this.scope,
                 style: 'primary',
                 acl: 'edit'
             });
-        },
 
-        actionCreateEmailAccount: function () {
-            if (this.options.userId) {
-                this.getRouter().dispatch('EmailAccount', 'create', {
-                    attributes: {
-                        assignedUserId: this.options.userId,
-                        assignedUserName: this.options.userId
-                    }
-                });
-                this.getRouter().navigate('#EmailAccount/create', {trigger: false});
-            } else {
-                this.getRouter().navigate('#EmailAccount/create', {trigger: true});
+            this.options.params = this.options.params || {};
+
+            var params = this.options.params || {};
+            if (params.userId) {
+                this.collection.where = [{
+                    type: 'equals',
+                    field: 'assignedUserId',
+                    value: params.userId
+                }];
             }
-
-
         },
 
+        getCreateAttributes: function () {
+            var attributes = {};
+            if (this.options.params.userId) {
+                attributes.assignedUserId = this.options.params.userId;
+                attributes.assignedUserName = this.options.params.userName || this.options.params.userId;
+            }
+            return attributes;
+        }
 
     });
 });
-

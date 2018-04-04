@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@ namespace tests\unit\Espo\Core\Utils;
 
 use tests\unit\ReflectionHelper;
 
-class FieldManagerTest extends \PHPUnit_Framework_TestCase
+class FieldManagerTest extends \PHPUnit\Framework\TestCase
 {
     protected $object;
 
@@ -42,10 +42,24 @@ class FieldManagerTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
+        $this->objects['container'] = $this->getMockBuilder('\Espo\Core\Container')->disableOriginalConstructor()->getMock();
+
         $this->objects['metadata'] = $this->getMockBuilder('\Espo\Core\Utils\Metadata')->disableOriginalConstructor()->getMock();
         $this->objects['language'] = $this->getMockBuilder('\Espo\Core\Utils\Language')->disableOriginalConstructor()->getMock();
+        $this->objects['baseLanguage'] = $this->getMockBuilder('\Espo\Core\Utils\Language')->disableOriginalConstructor()->getMock();
 
-        $this->object = new \Espo\Core\Utils\FieldManager($this->objects['metadata'], $this->objects['language']);
+        $map = array(
+            array('baseLanguage', $this->objects['baseLanguage']),
+            array('language', $this->objects['language']),
+            array('metadata', $this->objects['metadata'])
+        );
+
+        $this->objects['container']
+            ->expects($this->any())
+            ->method('get')
+            ->will($this->returnValueMap($map));
+
+        $this->object = new \Espo\Core\Utils\FieldManager($this->objects['container']);
 
         $this->reflection = new ReflectionHelper($this->object);
     }
@@ -57,7 +71,7 @@ class FieldManagerTest extends \PHPUnit_Framework_TestCase
 
     public function testCreateExistingField()
     {
-        $this->setExpectedException('\Espo\Core\Exceptions\Conflict');
+        $this->expectException('\Espo\Core\Exceptions\Conflict');
 
         $data = array(
             "type" => "varchar",
@@ -74,7 +88,6 @@ class FieldManagerTest extends \PHPUnit_Framework_TestCase
 
     public function testUpdateCoreField()
     {
-        //$this->setExpectedException('\Espo\Core\Exceptions\Error');
         $this->objects['metadata']
             ->expects($this->once())
             ->method('set')
@@ -85,9 +98,46 @@ class FieldManagerTest extends \PHPUnit_Framework_TestCase
             ->method('save')
             ->will($this->returnValue(true));
 
+        $existData = array(
+            "type" => "varchar",
+            "maxLength" => 50,
+            "label" => "Name",
+        );
+
         $data = array(
             "type" => "varchar",
-            "maxLength" => "50",
+            "maxLength" => 100,
+            "label" => "Modified Name",
+        );
+
+        $map = array(
+            ['entityDefs.Account.fields.name', null, $existData],
+            [['entityDefs', 'Account', 'fields', 'name', 'type'], null, $existData['type']],
+            ['fields.varchar', null, null],
+            [['fields', 'varchar', 'hookClassName'], null, null],
+        );
+
+        $this->objects['metadata']
+            ->expects($this->any())
+            ->method('get')
+            ->will($this->returnValueMap($map));
+
+        $this->object->update('Account', 'name', $data);
+    }
+
+    public function testUpdateCoreFieldWithNoChanges()
+    {
+        $this->objects['metadata']
+            ->expects($this->never())
+            ->method('set');
+
+        $this->objects['language']
+            ->expects($this->once())
+            ->method('save');
+
+        $data = array(
+            "type" => "varchar",
+            "maxLength" => 50,
             "label" => "Name",
         );
 
@@ -210,13 +260,5 @@ class FieldManagerTest extends \PHPUnit_Framework_TestCase
             ),
         );
         $this->assertEquals($result, $this->reflection->invokeMethod('normalizeDefs', array('CustomEntity', $input1, $input2)));
-    }
-
-    public function testDeleteTestFile()
-    {
-        $file = 'custom/Espo/Custom/Resources/metadata/entityDefs/CustomEntity.json';
-        if (file_exists($file)) {
-            @unlink($file);
-        }
     }
 }

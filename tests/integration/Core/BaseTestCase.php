@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -29,7 +29,7 @@
 
 namespace tests\integration\Core;
 
-abstract class BaseTestCase extends \PHPUnit_Framework_TestCase
+abstract class BaseTestCase extends \PHPUnit\Framework\TestCase
 {
     protected $espoTester;
 
@@ -113,6 +113,8 @@ abstract class BaseTestCase extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
+        $this->beforeSetUp();
+
         $params = array(
             'dataFile' => $this->dataFile,
             'pathToFiles' => $this->pathToFiles,
@@ -138,6 +140,11 @@ abstract class BaseTestCase extends \PHPUnit_Framework_TestCase
     protected function createUser($userData, array $role = null, $isPortal = false)
     {
         return $this->espoTester->createUser($userData, $role, $isPortal);
+    }
+
+    protected function beforeSetUp()
+    {
+
     }
 
     protected function beforeStartApplication()

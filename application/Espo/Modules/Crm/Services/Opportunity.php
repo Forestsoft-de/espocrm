@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -36,24 +36,43 @@ use \Espo\Core\Exceptions\Forbidden;
 
 class Opportunity extends \Espo\Services\Record
 {
-    public function reportSalesPipeline($dateFrom, $dateTo)
+    public function reportSalesPipeline($dateFilter, $dateFrom = null, $dateTo = null)
     {
+        if (in_array('amount', $this->getAcl()->getScopeForbiddenAttributeList('Opportunity'))) {
+            throw new Forbidden();
+        }
+
+        if ($dateFilter !== 'between' && $dateFilter !== 'ever') {
+            list($dateFrom, $dateTo) = $this->getDateRangeByFilter($dateFilter);
+        }
+
         $pdo = $this->getEntityManager()->getPDO();
 
-        $options = $this->getMetadata()->get('entityDefs.Opportunity.fields.stage.options');
+        $options = $this->getMetadata()->get('entityDefs.Opportunity.fields.stage.options', []);
 
-        $sql = "
-            SELECT opportunity.stage AS `stage`, SUM(opportunity.amount * currency.rate) as `amount`
-            FROM opportunity
-            JOIN currency ON currency.id = opportunity.amount_currency
-            WHERE
-                opportunity.deleted = 0 AND
-                opportunity.close_date >= ".$pdo->quote($dateFrom)." AND
-                opportunity.close_date < ".$pdo->quote($dateTo)." AND
-                opportunity.stage <> 'Closed Lost'
-            GROUP BY opportunity.stage
-            ORDER BY FIELD(opportunity.stage, '".implode("','", $options)."')
-        ";
+        $selectManager = $this->getSelectManagerFactory()->create('Opportunity');
+
+        $selectParams = [
+            'select' => ['stage', ['SUM:amountConverted', 'amount']],
+            'whereClause' => [
+                'stage!=' => 'Closed Lost'
+            ],
+            'orderBy' => 'LIST:stage:' . implode(',', $options),
+            'groupBy' => ['stage']
+        ];
+
+        if ($dateFilter !== 'ever') {
+            $selectParams['whereClause'][] = [
+                'closeDate>=' => $dateFrom,
+                'closeDate<' => $dateTo
+            ];
+        }
+
+        $selectManager->applyAccess($selectParams);
+
+        $this->getEntityManager()->getRepository('Opportunity')->handleSelectParams($selectParams);
+
+        $sql = $this->getEntityManager()->getQuery()->createSelectQuery('Opportunity', $selectParams);
 
         $sth = $pdo->prepare($sql);
         $sth->execute();
@@ -68,22 +87,48 @@ class Opportunity extends \Espo\Services\Record
         return $result;
     }
 
-    public function reportByLeadSource($dateFrom, $dateTo)
+    public function reportByLeadSource($dateFilter, $dateFrom = null, $dateTo = null)
     {
+        if (in_array('amount', $this->getAcl()->getScopeForbiddenAttributeList('Opportunity'))) {
+            throw new Forbidden();
+        }
+        if (in_array('leadSource', $this->getAcl()->getScopeForbiddenAttributeList('Opportunity'))) {
+            throw new Forbidden();
+        }
+
+        if ($dateFilter !== 'between' && $dateFilter !== 'ever') {
+            list($dateFrom, $dateTo) = $this->getDateRangeByFilter($dateFilter);
+        }
+
         $pdo = $this->getEntityManager()->getPDO();
 
-        $sql = "
-            SELECT opportunity.lead_source AS `leadSource`, SUM(opportunity.amount * currency.rate * opportunity.probability / 100) as `amount`
-            FROM opportunity
-            JOIN currency ON currency.id = opportunity.amount_currency
-            WHERE
-                opportunity.deleted = 0 AND
-                opportunity.close_date >= ".$pdo->quote($dateFrom)." AND
-                opportunity.close_date < ".$pdo->quote($dateTo)." AND
-                opportunity.stage <> 'Closed Lost' AND
-                opportunity.lead_source <> ''
-            GROUP BY opportunity.lead_source
-        ";
+        $options = $this->getMetadata()->get('entityDefs.Lead.fields.source.options', []);
+
+        $selectManager = $this->getSelectManagerFactory()->create('Opportunity');
+
+        $selectParams = [
+            'select' => ['leadSource', ['SUM:amountWeightedConverted', 'amount']],
+            'whereClause' => [
+                'stage!=' => 'Closed Lost',
+                ['leadSource!=' => ''],
+                ['leadSource!=' => null]
+            ],
+            'orderBy' => 'LIST:leadSource:' . implode(',', $options),
+            'groupBy' => ['leadSource']
+        ];
+
+        if ($dateFilter !== 'ever') {
+            $selectParams['whereClause'][] = [
+                'closeDate>=' => $dateFrom,
+                'closeDate<' => $dateTo
+            ];
+        }
+
+        $selectManager->applyAccess($selectParams);
+
+        $this->getEntityManager()->getRepository('Opportunity')->handleSelectParams($selectParams);
+
+        $sql = $this->getEntityManager()->getQuery()->createSelectQuery('Opportunity', $selectParams);
 
         $sth = $pdo->prepare($sql);
         $sth->execute();
@@ -98,25 +143,44 @@ class Opportunity extends \Espo\Services\Record
         return $result;
     }
 
-    public function reportByStage($dateFrom, $dateTo)
+    public function reportByStage($dateFilter, $dateFrom = null, $dateTo = null)
     {
+        if (in_array('amount', $this->getAcl()->getScopeForbiddenAttributeList('Opportunity'))) {
+            throw new Forbidden();
+        }
+
+        if ($dateFilter !== 'between' && $dateFilter !== 'ever') {
+            list($dateFrom, $dateTo) = $this->getDateRangeByFilter($dateFilter);
+        }
+
         $pdo = $this->getEntityManager()->getPDO();
 
-        $options = $this->getMetadata()->get('entityDefs.Opportunity.fields.stage.options');
+        $options = $this->getMetadata()->get('entityDefs.Opportunity.fields.stage.options', []);
 
-        $sql = "
-            SELECT opportunity.stage AS `stage`, SUM(opportunity.amount * currency.rate) as `amount`
-            FROM opportunity
-            JOIN currency ON currency.id = opportunity.amount_currency
-            WHERE
-                opportunity.deleted = 0 AND
-                opportunity.close_date >= ".$pdo->quote($dateFrom)." AND
-                opportunity.close_date < ".$pdo->quote($dateTo)." AND
-                opportunity.stage <> 'Closed Lost' AND
-                opportunity.stage <> 'Closed Won'
-            GROUP BY opportunity.stage
-            ORDER BY FIELD(opportunity.stage, '".implode("','", $options)."')
-        ";
+        $selectManager = $this->getSelectManagerFactory()->create('Opportunity');
+
+        $selectParams = [
+            'select' => ['stage', ['SUM:amountConverted', 'amount']],
+            'whereClause' => [
+                'stage!=' => 'Closed Lost',
+                'stage!=' => 'Closed Won'
+            ],
+            'orderBy' => 'LIST:stage:' . implode(',', $options),
+            'groupBy' => ['stage']
+        ];
+
+        if ($dateFilter !== 'ever') {
+            $selectParams['whereClause'][] = [
+                'closeDate>=' => $dateFrom,
+                'closeDate<' => $dateTo
+            ];
+        }
+
+        $selectManager->applyAccess($selectParams);
+
+        $this->getEntityManager()->getRepository('Opportunity')->handleSelectParams($selectParams);
+
+        $sql = $this->getEntityManager()->getQuery()->createSelectQuery('Opportunity', $selectParams);
 
         $sth = $pdo->prepare($sql);
         $sth->execute();
@@ -131,23 +195,42 @@ class Opportunity extends \Espo\Services\Record
         return $result;
     }
 
-    public function reportSalesByMonth($dateFrom, $dateTo)
+    public function reportSalesByMonth($dateFilter, $dateFrom = null, $dateTo = null)
     {
+        if (in_array('amount', $this->getAcl()->getScopeForbiddenAttributeList('Opportunity'))) {
+            throw new Forbidden();
+        }
+
+        if ($dateFilter !== 'between' && $dateFilter !== 'ever') {
+            list($dateFrom, $dateTo) = $this->getDateRangeByFilter($dateFilter);
+        }
+
         $pdo = $this->getEntityManager()->getPDO();
 
-        $sql = "
-            SELECT DATE_FORMAT(opportunity.close_date, '%Y-%m') AS `month`, SUM(opportunity.amount * currency.rate) as `amount`
-            FROM opportunity
-            JOIN currency ON currency.id = opportunity.amount_currency
-            WHERE
-                opportunity.deleted = 0 AND
-                opportunity.close_date >= ".$pdo->quote($dateFrom)." AND
-                opportunity.close_date < ".$pdo->quote($dateTo)." AND
-                opportunity.stage = 'Closed Won'
+        $selectManager = $this->getSelectManagerFactory()->create('Opportunity');
 
-            GROUP BY DATE_FORMAT(opportunity.close_date, '%Y-%m')
-            ORDER BY `month`
-        ";
+        $selectParams = [
+            'select' => [['MONTH:closeDate', 'month'], ['SUM:amountConverted', 'amount']],
+            'whereClause' => [
+                'stage' => 'Closed Won'
+            ],
+            'orderBy' => 1,
+            'groupBy' => ['MONTH:closeDate']
+        ];
+
+        if ($dateFilter !== 'ever') {
+            $selectParams['whereClause'][] = [
+                'closeDate>=' => $dateFrom,
+                'closeDate<' => $dateTo
+            ];
+        }
+
+        $selectManager->applyAccess($selectParams);
+
+        $this->getEntityManager()->getRepository('Opportunity')->handleSelectParams($selectParams);
+
+        $sql = $this->getEntityManager()->getQuery()->createSelectQuery('Opportunity', $selectParams);
+
 
         $sth = $pdo->prepare($sql);
         $sth->execute();
@@ -159,8 +242,79 @@ class Opportunity extends \Espo\Services\Record
             $result[$row['month']] = floatval($row['amount']);
         }
 
-        return $result;
+        $dt = new \DateTime($dateFrom);
+        $dtTo = new \DateTime($dateTo);
+
+        if (intval($dtTo->format('d')) !== 1) {
+            $dtTo->setDate($dtTo->format('Y'), $dtTo->format('m'), 1);
+            $dtTo->modify('+ 1 month');
+        } else {
+            $dtTo->setDate($dtTo->format('Y'), $dtTo->format('m'), 1);
+        }
+
+        if ($dt && $dtTo) {
+            $interval = new \DateInterval('P1M');
+            while ($dt->getTimestamp() <= $dtTo->getTimestamp()) {
+                $month = $dt->format('Y-m');
+                if (!array_key_exists($month, $result)) {
+                    $result[$month] = 0;
+                }
+                $dt->add($interval);
+            }
+        }
+
+        $keyList = array_keys($result);
+        sort($keyList);
+
+        $today = new \DateTime();
+
+        $endPosition = count($keyList) - 1;
+        for ($i = count($keyList) - 1; $i >= 0; $i--) {
+            $key = $keyList[$i];
+            $dt = new \DateTime($key . '-01');
+
+            if ($dt->getTimestamp() < $today->getTimestamp()) {
+                break;
+            }
+            if (empty($result[$key])) {
+                $endPosition = $i;
+            } else {
+                break;
+            }
+        }
+
+        $keyList = array_slice($keyList, 0, $endPosition);
+
+        return (object) [
+            'keyList' => $keyList,
+            'dataMap' => $result
+        ];
     }
 
+    protected function getDateRangeByFilter($dateFilter)
+    {
+        switch ($dateFilter) {
+            case 'currentYear':
+                $dt = new \DateTime();
+                return [
+                    $dt->modify('first day of January this year')->format('Y-m-d'),
+                    $dt->add(new \DateInterval('P1Y'))->format('Y-m-d')
+                ];
+            case 'currentQuarter':
+                $dt = new \DateTime();
+                $quarter = ceil($dt->format('m') / 3);
+                $dt->modify('first day of January this year');
+                return [
+                    $dt->add(new \DateInterval('P'.(($quarter - 1) * 3).'M'))->format('Y-m-d'),
+                    $dt->add(new \DateInterval('P3M'))->format('Y-m-d')
+                ];
+            case 'currentMonth':
+                $dt = new \DateTime();
+                return [
+                    $dt->modify('first day of this month')->format('Y-m-d'),
+                    $dt->add(new \DateInterval('P1M'))->format('Y-m-d')
+                ];
+        }
+        return [0, 0];
+    }
 }
-

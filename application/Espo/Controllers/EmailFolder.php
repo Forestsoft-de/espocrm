@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -35,22 +35,22 @@ class EmailFolder extends \Espo\Core\Controllers\Record
 {
     public function postActionMoveUp($params, $data, $request)
     {
-        if (empty($data['id'])) {
+        if (empty($data->id)) {
             throw new BadRequest();
         }
 
-        $this->getRecordService()->moveUp($data['id']);
+        $this->getRecordService()->moveUp($data->id);
 
         return true;
     }
 
     public function postActionMoveDown($params, $data, $request)
     {
-        if (empty($data['id'])) {
+        if (empty($data->id)) {
             throw new BadRequest();
         }
 
-        $this->getRecordService()->moveDown($data['id']);
+        $this->getRecordService()->moveDown($data->id);
 
         return true;
     }
@@ -60,4 +60,3 @@ class EmailFolder extends \Espo\Core\Controllers\Record
         return $this->getRecordService()->listAll();
     }
 }
-

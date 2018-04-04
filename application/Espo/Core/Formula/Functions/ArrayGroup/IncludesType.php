@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -36,10 +36,10 @@ class IncludesType extends \Espo\Core\Formula\Functions\Base
     public function process(\StdClass $item)
     {
         if (!property_exists($item, 'value') || !is_array($item->value)) {
-            throw new Error('Value for \'Array\\Includses\' item is not array.');
+            throw new Error('Value for \'Array\\Includes\' item is not array.');
         }
         if (count($item->value) < 2) {
-            throw new Error('Bad arguments passed to \'Array\\Includses\'.');
+            throw new Error('Bad arguments passed to \'Array\\Includes\'.');
         }
         $list = $this->evaluate($item->value[0]);
         $needle = $this->evaluate($item->value[1]);

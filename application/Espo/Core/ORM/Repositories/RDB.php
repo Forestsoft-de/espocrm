@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -40,7 +40,9 @@ use \Espo\Core\Interfaces\Injectable;
 class RDB extends \Espo\ORM\Repositories\RDB implements Injectable
 {
     protected $dependencies = array(
-        'metadata'
+        'metadata',
+        'config',
+        'fieldManagerUtil'
     );
 
     protected $injections = array();
@@ -50,6 +52,8 @@ class RDB extends \Espo\ORM\Repositories\RDB implements Injectable
     protected $hooksDisabled = false;
 
     protected $processFieldsAfterSaveDisabled = false;
+
+    protected $processFieldsBeforeSaveDisabled = false;
 
     protected function addDependency($name)
     {
@@ -81,6 +85,16 @@ class RDB extends \Espo\ORM\Repositories\RDB implements Injectable
     protected function getMetadata()
     {
         return $this->getInjection('metadata');
+    }
+
+    protected function getConfig()
+    {
+        return $this->getInjection('config');
+    }
+
+    protected function getFieldManagerUtil()
+    {
+        return $this->getInjection('fieldManagerUtil');
     }
 
     public function __construct($entityType, EntityManager $entityManager, EntityFactory $entityFactory)
@@ -176,7 +190,7 @@ class RDB extends \Espo\ORM\Repositories\RDB implements Injectable
     protected function beforeRemove(Entity $entity, array $options = array())
     {
         parent::beforeRemove($entity, $options);
-        if (!$this->hooksDisabled) {
+        if (!$this->hooksDisabled && empty($options['skipHooks'])) {
             $this->getEntityManager()->getHookManager()->process($this->entityType, 'beforeRemove', $entity, $options);
         }
 
@@ -192,14 +206,14 @@ class RDB extends \Espo\ORM\Repositories\RDB implements Injectable
     protected function afterRemove(Entity $entity, array $options = array())
     {
         parent::afterRemove($entity, $options);
-        if (!$this->hooksDisabled) {
+        if (!$this->hooksDisabled && empty($options['skipHooks'])) {
             $this->getEntityManager()->getHookManager()->process($this->entityType, 'afterRemove', $entity, $options);
         }
     }
 
     protected function afterMassRelate(Entity $entity, $relationName, array $params = array(), array $options = array())
     {
-        if (!$this->hooksDisabled) {
+        if (!$this->hooksDisabled && empty($options['skipHooks'])) {
             $hookData = array(
                 'relationName' => $relationName,
                 'relationParams' => $params
@@ -220,7 +234,7 @@ class RDB extends \Espo\ORM\Repositories\RDB implements Injectable
 
         if ($foreign instanceof Entity) {
             $foreignEntity = $foreign;
-            if (!$this->hooksDisabled) {
+            if (!$this->hooksDisabled && empty($options['skipHooks'])) {
                 $hookData = array(
                     'relationName' => $relationName,
                     'relationData' => $data,
@@ -237,7 +251,7 @@ class RDB extends \Espo\ORM\Repositories\RDB implements Injectable
 
         if ($foreign instanceof Entity) {
             $foreignEntity = $foreign;
-            if (!$this->hooksDisabled) {
+            if (!$this->hooksDisabled && empty($options['skipHooks'])) {
                 $hookData = array(
                     'relationName' => $relationName,
                     'foreignEntity' => $foreignEntity
@@ -251,8 +265,12 @@ class RDB extends \Espo\ORM\Repositories\RDB implements Injectable
     {
         parent::beforeSave($entity, $options);
 
-        if (!$this->hooksDisabled) {
+        if (!$this->hooksDisabled && empty($options['skipHooks'])) {
             $this->getEntityManager()->getHookManager()->process($this->entityType, 'beforeSave', $entity, $options);
+        }
+
+        if (!$this->processFieldsBeforeSaveDisabled) {
+            $this->processCurrencyFieldsBeforeSave($entity);
         }
     }
 
@@ -271,7 +289,7 @@ class RDB extends \Espo\ORM\Repositories\RDB implements Injectable
             $this->processFileFieldsSave($entity);
         }
 
-        if (!$this->hooksDisabled) {
+        if (!$this->hooksDisabled && empty($options['skipHooks'])) {
             $this->getEntityManager()->getHookManager()->process($this->entityType, 'afterSave', $entity, $options);
         }
     }
@@ -285,40 +303,67 @@ class RDB extends \Espo\ORM\Repositories\RDB implements Injectable
             if (!$entity->has('id')) {
                 $entity->set('id', Util::generateId());
             }
+        }
 
-            if ($entity->hasAttribute('createdAt')) {
-                if (empty($options['import']) || !$entity->has('createdAt')) {
-                    $entity->set('createdAt', $nowString);
-                }
-            }
-            if ($entity->hasAttribute('modifiedAt')) {
-                $entity->set('modifiedAt', $nowString);
-            }
-            if ($entity->hasAttribute('createdById')) {
-                if (empty($options['skipCreatedBy']) && (empty($options['import']) || !$entity->has('createdById'))) {
-                    if ($this->getEntityManager()->getUser()) {
-                        $entity->set('createdById', $this->getEntityManager()->getUser()->id);
+        if (empty($options['skipAll'])) {
+            if ($entity->isNew()) {
+                if ($entity->hasAttribute('createdAt')) {
+                    if (empty($options['import']) || !$entity->has('createdAt')) {
+                        $entity->set('createdAt', $nowString);
                     }
                 }
-            }
-        } else {
-            if (empty($options['silent']) && empty($options['skipModifiedBy'])) {
                 if ($entity->hasAttribute('modifiedAt')) {
                     $entity->set('modifiedAt', $nowString);
                 }
-                if ($entity->hasAttribute('modifiedById')) {
-                    if ($this->getEntityManager()->getUser()) {
-                        $entity->set('modifiedById', $this->getEntityManager()->getUser()->id);
-                        $entity->set('modifiedByName', $this->getEntityManager()->getUser()->get('name'));
+                if ($entity->hasAttribute('createdById')) {
+                    if (empty($options['skipCreatedBy']) && (empty($options['import']) || !$entity->has('createdById'))) {
+                        if ($this->getEntityManager()->getUser()) {
+                            $entity->set('createdById', $this->getEntityManager()->getUser()->id);
+                        }
+                    }
+                }
+            } else {
+                if (empty($options['silent']) && empty($options['skipModifiedBy'])) {
+                    if ($entity->hasAttribute('modifiedAt')) {
+                        $entity->set('modifiedAt', $nowString);
+                    }
+                    if ($entity->hasAttribute('modifiedById')) {
+                        if ($this->getEntityManager()->getUser()) {
+                            $entity->set('modifiedById', $this->getEntityManager()->getUser()->id);
+                            $entity->set('modifiedByName', $this->getEntityManager()->getUser()->get('name'));
+                        }
                     }
                 }
             }
         }
+
         $this->restoreData = $restoreData;
 
         $result = parent::save($entity, $options);
 
         return $result;
+    }
+
+    protected function getFieldByTypeList($type)
+    {
+        return $this->getFieldManagerUtil()->getFieldByTypeList($this->entityType, $type);
+    }
+
+    protected function processCurrencyFieldsBeforeSave(Entity $entity)
+    {
+        foreach ($this->getFieldByTypeList('currency') as $field) {
+            $currencyAttribute = $field . 'Currency';
+            $defaultCurrency = $this->getConfig()->get('defaultCurrency');
+            if ($entity->isNew()) {
+                if ($entity->get($field) && !$entity->get($currencyAttribute)) {
+                    $entity->set($currencyAttribute, $defaultCurrency);
+                }
+            } else {
+                if ($entity->isAttributeChanged($field) && $entity->has($currencyAttribute) && !$entity->get($currencyAttribute)) {
+                    $entity->set($currencyAttribute, $defaultCurrency);
+                }
+            }
+        }
     }
 
     protected function processFileFieldsSave(Entity $entity)
@@ -363,14 +408,14 @@ class RDB extends \Espo\ORM\Repositories\RDB implements Injectable
     protected function processEmailAddressSave(Entity $entity)
     {
         if ($entity->hasRelation('emailAddresses') && $entity->hasAttribute('emailAddress')) {
-            $emailAddressRepository = $this->getEntityManager()->getRepository('EmailAddress')->storeEntityEmailAddress($entity);
+            $this->getEntityManager()->getRepository('EmailAddress')->storeEntityEmailAddress($entity);
         }
     }
 
     protected function processPhoneNumberSave(Entity $entity)
     {
         if ($entity->hasRelation('phoneNumbers') && $entity->hasAttribute('phoneNumber')) {
-            $emailAddressRepository = $this->getEntityManager()->getRepository('PhoneNumber')->storeEntityPhoneNumber($entity);
+            $this->getEntityManager()->getRepository('PhoneNumber')->storeEntityPhoneNumber($entity);
         }
     }
 

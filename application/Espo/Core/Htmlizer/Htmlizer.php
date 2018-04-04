@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -50,13 +50,19 @@ class Htmlizer
 
     protected $entityManager;
 
-    public function __construct(FileManager $fileManager, DateTime $dateTime, NumberUtil $number, $acl = null, $entityManager = null)
+    protected $metadata;
+
+    protected $language;
+
+    public function __construct(FileManager $fileManager, DateTime $dateTime, NumberUtil $number, $acl = null, $entityManager = null, $metadata = null, $language = null)
     {
         $this->fileManager = $fileManager;
         $this->dateTime = $dateTime;
         $this->number = $number;
         $this->acl = $acl;
         $this->entityManager = $entityManager;
+        $this->metadata = $metadata;
+        $this->language = $language;
     }
 
     protected function getAcl()
@@ -115,16 +121,16 @@ class Htmlizer
                     foreach ($list as $item) {
                         $v = $item;
                         if ($item instanceof \StdClass) {
-                            $v = get_object_vars($v);
+                            $v = json_decode(json_encode($v), true);
                         }
-                        if (!is_array($v)) {
-                            $v = [];
+                        if (is_array($v)) {
+                            foreach ($v as $k => $w) {
+                                $keyRaw = $k . '_RAW';
+                                $v[$keyRaw] = $v[$k];
+                                $v[$k] = $this->format($v[$k]);
+                            }
                         }
-                        foreach ($v as $k => $w) {
-                            $keyRaw = $k . '_RAW';
-                            $v[$keyRaw] = $v[$k];
-                            $v[$k] = $this->format($v[$k]);
-                        }
+
                         $newList[] = $v;
                     }
                     $data[$field] = $newList;
@@ -133,7 +139,7 @@ class Htmlizer
                 if (!empty($data[$field])) {
                     $value = $data[$field];
                     if ($value instanceof \StdClass) {
-                        $data[$field] = get_object_vars($value);
+                        $data[$field] = json_decode(json_encode($value), true);
                     }
                     foreach ($data[$field] as $k => $w) {
                         $keyRaw = $k . '_RAW';
@@ -148,6 +154,14 @@ class Htmlizer
             if (array_key_exists($field, $data)) {
                 $keyRaw = $field . '_RAW';
                 $data[$keyRaw] = $data[$field];
+
+                $fieldType = $this->getFieldType($entity->getEntityType(), $field);
+                if ($fieldType === 'enum') {
+                    if ($this->language) {
+                        $data[$field] = $this->language->translateOption($data[$field], $field, $entity->getEntityType());
+                    }
+                }
+
                 $data[$field] = $this->format($data[$field]);
             }
         }
@@ -246,12 +260,19 @@ class Htmlizer
 
         $data = $this->getDataFromEntity($entity, $skipLinks);
 
+        if (!array_key_exists('today', $data)) {
+            $data['today'] = $this->dateTime->getTodayString();
+        }
+
+        if (!array_key_exists('now', $data)) {
+            $data['now'] = $this->dateTime->getNowString();
+        }
+
         foreach ($additionalData as $k => $value) {
             $data[$k] = $value;
         }
 
         $html = $renderer($data);
-
 
         $html = str_replace('?entryPoint=attachment&amp;', '?entryPoint=attachment&', $html);
 
@@ -268,5 +289,10 @@ class Htmlizer
         }
 
         return $html;
+    }
+
+    protected function getFieldType($entityType, $field) {
+        if (!$this->metadata) return;
+        return $this->metadata->get(['entityDefs', $entityType, 'fields', $field, 'type']);
     }
 }

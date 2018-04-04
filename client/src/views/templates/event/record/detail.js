@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -35,16 +35,15 @@ Espo.define('views/templates/event/record/detail', 'views/record/detail', functi
             if (this.getAcl().checkModel(this.model, 'edit')) {
                 if (['Held', 'Not Held'].indexOf(this.model.get('status')) == -1) {
                     this.dropdownItemList.push({
-                        'html': this.translate('Set Held', 'labels', 'Meeting'),
+                        'html': this.translate('Set Held', 'labels', this.scope),
                         'name': 'setHeld'
                     });
                     this.dropdownItemList.push({
-                        'html': this.translate('Set Not Held', 'labels', 'Meeting'),
+                        'html': this.translate('Set Not Held', 'labels', this.scope),
                         'name': 'setNotHeld'
                     });
                 }
             }
-            console.log(this.dropdownItemList);
         },
 
         actionSetHeld: function () {

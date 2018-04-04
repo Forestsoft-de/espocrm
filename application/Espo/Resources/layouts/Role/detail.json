@@ -3,15 +3,13 @@
         "rows": [
             [
                 {"name": "name"},
-                {"name": "assignmentPermission"}
-            ],
-            [
-                false,
+                {"name": "exportPermission"},
                 {"name": "userPermission"}
             ],
             [
-                false,
-                {"name": "portalPermission"}
+                {"name": "assignmentPermission"},
+                {"name": "portalPermission"},
+                {"name": "groupEmailAccountPermission"}
             ]
         ]
     }

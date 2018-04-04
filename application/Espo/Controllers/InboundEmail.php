@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -59,15 +59,15 @@ class InboundEmail extends \Espo\Core\Controllers\Record
             throw new BadRequest();
         }
 
-        if (is_null($data['password'])) {
-            $inboundEmail = $this->getEntityManager()->getEntity('InboundEmail', $data['id']);
-            if (!$inboundEmail) {
+        if (is_null($data->password)) {
+            $inboundEmail = $this->getEntityManager()->getEntity('InboundEmail', $data->id);
+            if (!$inboundEmail || !$inboundEmail->id) {
                 throw new Error();
             }
-            $data['password'] = $this->getContainer()->get('crypt')->decrypt($inboundEmail->get('password'));
+            $data->password = $this->getContainer()->get('crypt')->decrypt($inboundEmail->get('password'));
         }
 
-        return $this->getRecordService()->testConnection($data);
+        return $this->getRecordService()->testConnection(get_object_vars($data));
     }
 
 }

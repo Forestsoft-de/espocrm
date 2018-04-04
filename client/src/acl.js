@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -28,9 +28,10 @@
 
 Espo.define('acl', [], function () {
 
-    var Acl = function (user, scope) {
+    var Acl = function (user, scope, aclAllowDeleteCreated) {
         this.user = user || null;
         this.scope = scope;
+        this.aclAllowDeleteCreated = aclAllowDeleteCreated;
     }
 
     _.extend(Acl.prototype, {
@@ -151,7 +152,7 @@ Espo.define('acl', [], function () {
             }
 
             if (model.has('createdById')) {
-                if (model.get('createdById') === this.getUser().id) {
+                if (model.get('createdById') === this.getUser().id && this.aclAllowDeleteCreated) {
                     if (!model.has('assignedUserId')) {
                         return true;
                     } else {

@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -32,18 +32,18 @@ $result = array('success' => false, 'errorMsg' => '');
 
 // create user
 if (!empty($_SESSION['install']['user-name']) && !empty($_SESSION['install']['user-pass'])) {
-	$userId = $installer->createUser($_SESSION['install']['user-name'], $_SESSION['install']['user-pass']);
-	if (!empty($userId)) {
-		$result['success'] = true;
-	}
-	else {
-		$result['success'] = false;
-		$result['errorMsg'] = 'Cannot create user';
-	}
+    $userId = $installer->createUser($_SESSION['install']['user-name'], $_SESSION['install']['user-pass']);
+    if (!empty($userId)) {
+        $result['success'] = true;
+    }
+    else {
+        $result['success'] = false;
+        $result['errorMsg'] = 'Cannot create user';
+    }
 }
 else {
-	$result['success'] = false;
-	$result['errorMsg'] = 'Cannot create user';
+    $result['success'] = false;
+    $result['errorMsg'] = 'Cannot create user';
 }
 
 ob_clean();

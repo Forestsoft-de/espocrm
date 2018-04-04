@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -39,7 +39,7 @@ require_once 'tests/unit/testData/DB/Entities.php';
 require_once 'tests/unit/testData/DB/MockPDO.php';
 require_once 'tests/unit/testData/DB/MockDBResult.php';
 
-class QueryTest extends PHPUnit_Framework_TestCase
+class QueryTest extends \PHPUnit\Framework\TestCase
 {
     protected $query;
 
@@ -49,7 +49,7 @@ class QueryTest extends PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        $this->pdo = $this->getMock('MockPDO');
+        $this->pdo = $this->createMock('MockPDO');
         $this->pdo
                 ->expects($this->any())
                 ->method('quote')
@@ -416,8 +416,30 @@ class QueryTest extends PHPUnit_Framework_TestCase
         ));
         $expectedSql =
             "SELECT comment.id AS `id` FROM `comment` " .
-            "WHERE WEEK(comment.created_at, 1) = '2' AND comment.deleted = '0'";
+            "WHERE WEEK(comment.created_at, 5) = '2' AND comment.deleted = '0'";
         $this->assertEquals($expectedSql, $sql);
     }
 
+    public function testHaving()
+    {
+        $sql = $this->query->createSelectQuery('Comment', array(
+            'select' => ['COUNT:comment.id', 'postId', 'postName'],
+            'leftJoins' => ['post'],
+            'groupBy' => ['postId'],
+            'whereClause' => array(
+                'post.createdById' => 'id_1'
+            ),
+            'havingClause' => [
+                'COUNT:comment.id>' => 1
+            ]
+        ));
+
+        $expectedSql =
+            "SELECT COUNT(comment.id) AS `COUNT:comment.id`, comment.post_id AS `postId`, post.name AS `postName` " .
+            "FROM `comment` LEFT JOIN `post` AS `post` ON comment.post_id = post.id " .
+            "WHERE post.created_by_id = 'id_1' AND comment.deleted = '0' " .
+            "GROUP BY comment.post_id " .
+            "HAVING COUNT(comment.id) > '1'";
+        $this->assertEquals($expectedSql, $sql);
+    }
 }

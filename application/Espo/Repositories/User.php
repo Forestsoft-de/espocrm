@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -32,6 +32,7 @@ namespace Espo\Repositories;
 use \Espo\ORM\Entity;
 
 use \Espo\Core\Exceptions\Error;
+use \Espo\Core\Exceptions\Conflict;
 
 class User extends \Espo\Core\ORM\Repositories\RDB
 {
@@ -50,10 +51,10 @@ class User extends \Espo\Core\ORM\Repositories\RDB
             ))->findOne();
 
             if ($user) {
-                throw new Error();
+                throw new Conflict(json_encode(['reason' => 'userNameExists']));
             }
         } else {
-            if ($entity->isFieldChanged('userName')) {
+            if ($entity->isAttributeChanged('userName')) {
                 $userName = $entity->get('userName');
                 if (empty($userName)) {
                     throw new Error();
@@ -64,7 +65,7 @@ class User extends \Espo\Core\ORM\Repositories\RDB
                     'id!=' => $entity->id
                 ))->findOne();
                 if ($user) {
-                    throw new Error();
+                    throw new Conflict(json_encode(['reason' => 'userNameExists']));
                 }
             }
         }
@@ -113,4 +114,3 @@ class User extends \Espo\Core\ORM\Repositories\RDB
         return false;
     }
 }
-

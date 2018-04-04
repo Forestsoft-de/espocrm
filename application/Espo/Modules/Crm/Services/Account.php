@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -42,7 +42,7 @@ class Account extends \Espo\Services\Record
         )
     );
 
-    protected function getDuplicateWhereClause(Entity $entity, $data = array())
+    protected function getDuplicateWhereClause(Entity $entity, $data)
     {
         if (!$entity->get('name')) {
             return false;
@@ -51,5 +51,17 @@ class Account extends \Espo\Services\Record
             'name' => $entity->get('name')
         );
     }
-}
 
+    protected function afterMerge(Entity $entity, array $sourceList, $attributes)
+    {
+        foreach ($sourceList as $source) {
+            $contactList = $this->getEntityManager()->getRepository('Contact')->where([
+                'accountId' => $source->id
+            ])->find();
+            foreach ($contactList as $contact) {
+                $contact->set('accountId', $entity->id);
+                $this->getEntityManager()->saveEntity($contact);
+            }
+        }
+    }
+}

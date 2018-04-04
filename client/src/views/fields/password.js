@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -26,22 +26,22 @@
  * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
  ************************************************************************/
 
-Espo.define('Views.Fields.Password', 'Views.Fields.Base', function (Dep) {
+Espo.define('views/fields/password', 'views/fields/base', function (Dep) {
 
     return Dep.extend({
 
-        type: 'Password',
+        type: 'password',
 
-        detailTemplate: 'fields.password.detail',
+        detailTemplate: 'fields/password/detail',
 
-        editTemplate: 'fields.password.edit',
+        editTemplate: 'fields/password/edit',
 
         validations: ['required', 'confirm'],
 
         events: {
             'click [data-action="change"]': function (e) {
                 this.changePassword();
-            },
+            }
         },
 
         changePassword: function () {

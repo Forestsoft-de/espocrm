@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -44,11 +44,36 @@ class CaseObj extends \Espo\Services\Record
         'inboundEmailId'
     ];
 
-    public function afterCreate(Entity $entity, array $data = array())
+    protected $noEditAccessRequiredLinkList = [
+        'articles'
+    ];
+
+    public function beforeCreateEntity(Entity $entity, $data)
     {
-        parent::afterCreate($entity, $data);
-        if (!empty($data['emailId'])) {
-            $email = $this->getEntityManager()->getEntity('Email', $data['emailId']);
+        parent::beforeCreateEntity($entity, $data);
+
+        if ($this->getUser()->isPortal()) {
+            if (!$entity->has('accountId')) {
+                if ($this->getUser()->get('contactId')) {
+                    $contact = $this->getEntityManager()->getEntity('Contact', $this->getUser()->get('contactId'));
+                    if ($contact && $contact->get('accountId')) {
+                        $entity->set('accountId', $contact->get('accountId'));
+                    }
+                }
+            }
+            if (!$entity->has('contactId')) {
+                if ($this->getUser()->get('contactId')) {
+                    $entity->set('contactId', $this->getUser()->get('contactId'));
+                }
+            }
+        }
+    }
+
+    public function afterCreateEntity(Entity $entity, $data)
+    {
+        parent::afterCreateEntity($entity, $data);
+        if (!empty($data->emailId)) {
+            $email = $this->getEntityManager()->getEntity('Email', $data->emailId);
             if ($email && !$email->get('parentId')) {
                 $email->set(array(
                     'parentType' => 'Case',
@@ -58,6 +83,5 @@ class CaseObj extends \Espo\Services\Record
             }
         }
     }
-
 }
 

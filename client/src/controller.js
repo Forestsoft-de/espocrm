@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -280,14 +280,18 @@ Espo.define('controller', [], function () {
                         main.render();
                     }
                 }.bind(this);
+
                 if (useStored) {
                     if (this.hasStoredMainView(storedKey)) {
                         var main = this.getStoredMainView(storedKey);
-                        process(main);
-                        if (main && typeof main.applyRoutingParams === 'function') {
-                            main.applyRoutingParams(options.params || {});
+
+                        if (!main.lastUrl || main.lastUrl === this.getRouter().getCurrentUrl()) {
+                            process(main);
+                            if (main && typeof main.applyRoutingParams === 'function') {
+                                main.applyRoutingParams(options.params || {});
+                            }
+                            return;
                         }
-                        return;
                     }
                 }
                 this.viewFactory.create(view, options, process);

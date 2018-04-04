@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -33,6 +33,19 @@ Espo.define('crm:views/contact/fields/account-role', 'views/fields/varchar', fun
         detailTemplate: 'crm:contact/fields/account-role/detail',
 
         listTemplate: 'crm:contact/fields/account-role/detail',
+
+        setup: function () {
+            Dep.prototype.setup.call(this);
+            this.listenTo(this.model, 'change:title', function (model, value, o) {
+                this.model.set('accountRole', this.model.get('title'));
+            }, this);
+        },
+
+        getAttributeList: function () {
+            var list = Dep.prototype.getAttributeList.call(this);
+            list.push('title');
+            return list;
+        },
 
         data: function () {
             var data = Dep.prototype.data.call(this);

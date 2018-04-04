@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -214,20 +214,30 @@ class Tester
 
     protected function loadData()
     {
-        if (!empty($this->params['dataFile'])) {
-            $this->getDataLoader()->loadData($this->params['dataFile']);
-        }
-
         if (!empty($this->params['pathToFiles'])) {
             $this->getDataLoader()->loadFiles($this->params['pathToFiles']);
+            $this->clearVars();
+            $this->getApplication()->runRebuild();
+        }
+
+        if (!empty($this->params['dataFile'])) {
+            $this->getDataLoader()->loadData($this->params['dataFile']);
         }
     }
 
     public function clearCache()
     {
-        $fileManager = new \Espo\Core\Utils\File\Manager();
+        $this->clearVars();
 
+        $fileManager = new \Espo\Core\Utils\File\Manager();
         return $fileManager->removeInDir('data/cache');
+    }
+
+    protected function clearVars()
+    {
+        $this->dataLoader = null;
+        $this->application = null;
+        $this->apiClient = null;
     }
 
     public function sendRequest($method, $action, $data = null)

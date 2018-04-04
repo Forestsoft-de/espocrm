@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -69,6 +69,10 @@ Espo.define('views/fields/address', 'views/fields/base', function (Dep) {
                            data.countryValue);
 
             return data;
+        },
+
+        setupSearch: function () {
+            this.searchData.value = this.getSearchParamsData().value || this.searchParams.additionalValue; 
         },
 
         getFormattedAddress: function () {
@@ -349,7 +353,7 @@ Espo.define('views/fields/address', 'views/fields/base', function (Dep) {
             return this.model.getFieldParam(this.postalCodeField, 'required') ||
                    this.model.getFieldParam(this.streetField, 'required') ||
                    this.model.getFieldParam(this.stateField, 'required') ||
-                   this.model.getFieldParam(this.cityField, 'required');
+                   this.model.getFieldParam(this.cityField, 'required') ||
                    this.model.getFieldParam(this.countryField, 'required');
         },
 
@@ -366,42 +370,42 @@ Espo.define('views/fields/address', 'views/fields/base', function (Dep) {
         fetchSearch: function () {
             var value = this.$el.find('[name="'+this.name+'"]').val().toString().trim();
             if (value) {
-                value += '%';
                 var data = {
                     type: 'or',
                     value: [
                         {
                             type: 'like',
                             field: this.postalCodeField,
-                            value: value
+                            value: value + '%'
                         },
                         {
                             type: 'like',
                             field: this.streetField,
-                            value: value
+                            value: value + '%'
                         },
                         {
                             type: 'like',
                             field: this.cityField,
-                            value: value
+                            value: value + '%'
                         },
                         {
                             type: 'like',
                             field: this.stateField,
-                            value: value
+                            value: value + '%'
                         },
                             {
                             type: 'like',
                             field: this.countryField,
-                            value: value
+                            value: value + '%'
                         },
                     ],
-                    additionalValue: value
+                    data: {
+                        value: value
+                    }
                 };
                 return data;
             }
             return false;
-        },
+        }
     });
 });
-

@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -77,7 +77,7 @@ Espo.define('crm:views/calendar/timeline', ['view', 'lib!vis'], function (Dep, V
 
             return {
                 mode: this.mode,
-                modeList: this.modeList,
+                modeDataList: this.getModeDataList(),
                 header: this.header,
                 calendarType: this.calendarType,
                 scopeFilterDataList: scopeFilterDataList,
@@ -197,6 +197,18 @@ Espo.define('crm:views/calendar/timeline', ['view', 'lib!vis'], function (Dep, V
             if (!~this.calendarTypeList.indexOf(this.calendarType)) {
                 this.calendarType = 'single';
             }
+        },
+
+        getModeDataList: function () {
+            var list = [];
+            this.modeList.forEach(function (name) {
+                var o = {
+                    name: name,
+                    labelShort: this.translate(name, 'modes', 'Calendar').substr(0, 2)
+                };
+                list.push(o);
+            }, this);
+            return list;
         },
 
         getCalendarTypeDataList: function () {
@@ -424,8 +436,8 @@ Espo.define('crm:views/calendar/timeline', ['view', 'lib!vis'], function (Dep, V
                 var itemsDataSet = new Vis.DataSet(eventList);
                 var timeline = this.timeline = new Vis.Timeline($timeline.get(0), itemsDataSet, this.groupsDataSet, {
                     dataAttributes: 'all',
-                    start: this.start.format(this.getDateTime().internalDateTimeFormat),
-                    end: this.end.format(this.getDateTime().internalDateTimeFormat),
+                    start: this.start.toDate(),
+                    end: this.end.toDate(),
                     moment: function (date) {
                         var m = moment(date);
                         if (date && date.noTimeZone) {
@@ -454,6 +466,7 @@ Espo.define('crm:views/calendar/timeline', ['view', 'lib!vis'], function (Dep, V
                 });
 
                 timeline.on('click', function (e) {
+                    if (this.blockClick) return;
                     if (e.item) {
                         var $item = this.$el.find('.timeline .vis-item[data-id="'+e.item+'"]');
                         var id = $item.attr('data-record-id');
@@ -468,6 +481,11 @@ Espo.define('crm:views/calendar/timeline', ['view', 'lib!vis'], function (Dep, V
                 }.bind(this));
 
                 timeline.on('rangechanged', function (e) {
+                    e.skipClick = true;
+
+                    this.blockClick = true;
+                    setTimeout(function () {this.blockClick = false}.bind(this), 100);
+
                     this.start = moment(e.start);
                     this.end = moment(e.end);
 

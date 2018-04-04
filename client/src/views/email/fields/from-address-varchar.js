@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -32,17 +32,12 @@ Espo.define('views/email/fields/from-address-varchar', 'views/fields/varchar', f
         detailTemplate: 'email/fields/email-address-varchar/detail',
 
         setup: function () {
+            this.params.required = false;
             Dep.prototype.setup.call(this);
 
             this.on('render', function () {
                 this.initAddressList();
             }, this);
-        },
-
-        data: function () {
-            var data = Dep.prototype.data.call(this);
-            data.valueIsSet = this.model.has(this.name);
-            return data;
         },
 
         events: {
@@ -68,11 +63,13 @@ Espo.define('views/email/fields/from-address-varchar', 'views/fields/varchar', f
             var data = Dep.prototype.data.call(this);
 
             var address = this.model.get(this.name);
-            if (!(address in this.idHash) && this.model.get('parentId')) {
+            if (address && !(address in this.idHash) && this.model.get('parentId')) {
                 if (this.getAcl().check('Contact', 'edit')) {
                     data.showCreate = true;
                 }
             }
+
+            data.valueIsSet = this.model.has(this.name);
 
             return data;
         },

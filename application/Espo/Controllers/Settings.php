@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -46,7 +46,7 @@ class Settings extends \Espo\Core\Controllers\Base
         $fieldDefs = $this->getMetadata()->get('entityDefs.Settings.fields');
 
         foreach ($fieldDefs as $field => $d) {
-            if ($d['type'] == 'password') {
+            if ($d['type'] === 'password') {
                 unset($data[$field]);
             }
         }
@@ -77,9 +77,9 @@ class Settings extends \Espo\Core\Controllers\Base
         }
 
         if (
-            (isset($data['useCache']) && $data['useCache'] != $this->getConfig()->get('useCache'))
+            (isset($data->useCache) && $data->useCache !== $this->getConfig()->get('useCache'))
             ||
-            (isset($data['aclStrictMode']) && $data['aclStrictMode'] !== $this->getConfig()->get('aclStrictMode'))
+            (isset($data->aclStrictMode) && $data->aclStrictMode !== $this->getConfig()->get('aclStrictMode'))
         ) {
             $this->getContainer()->get('dataManager')->clearCache();
         }
@@ -90,11 +90,9 @@ class Settings extends \Espo\Core\Controllers\Base
             throw new Error('Cannot save settings');
         }
 
-        /** Rebuild for Currency Settings */
-        if (isset($data['baseCurrency']) || isset($data['currencyRates'])) {
-            $this->getContainer()->get('dataManager')->rebuildDatabase(array());
+        if (isset($data->defaultCurrency) || isset($data->baseCurrency) || isset($data->currencyRates)) {
+            $this->getContainer()->get('dataManager')->rebuildDatabase([]);
         }
-        /** END Rebuild for Currency Settings */
 
         return $this->getConfigData();
     }
@@ -105,9 +103,11 @@ class Settings extends \Espo\Core\Controllers\Base
             throw new Forbidden();
         }
 
-        if (!isset($data['password'])) {
-            $data['password'] = $this->getConfig()->get('ldapPassword');
+        if (!isset($data->password)) {
+            $data->password = $this->getConfig()->get('ldapPassword');
         }
+
+        $data = get_object_vars($data);
 
         $ldapUtils = new \Espo\Core\Utils\Authentication\LDAP\Utils();
         $options = $ldapUtils->normalizeOptions($data);

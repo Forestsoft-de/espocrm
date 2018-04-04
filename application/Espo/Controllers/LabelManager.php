@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -53,23 +53,23 @@ class LabelManager extends \Espo\Core\Controllers\Base
 
     public function postActionGetScopeData($params, $data, $request)
     {
-        if (empty($data['scope']) || empty($data['language'])) {
+        if (empty($data->scope) || empty($data->language)) {
             throw new BadRequest();
         }
         $labelManager = $this->getContainer()->get('injectableFactory')->createByClassName('\\Espo\\Core\\Utils\\LabelManager');
-        return $labelManager->getScopeData($data['language'], $data['scope']);
+        return $labelManager->getScopeData($data->language, $data->scope);
     }
 
     public function postActionSaveLabels($params, $data)
     {
-        if (empty($data['scope']) || empty($data['language']) || !isset($data['labels'])) {
+        if (empty($data->scope) || empty($data->language) || !isset($data->labels)) {
             throw new BadRequest();
         }
 
-        $labels = get_object_vars($data['labels']);
+        $labels = get_object_vars($data->labels);
 
         $labelManager = $this->getContainer()->get('injectableFactory')->createByClassName('\\Espo\\Core\\Utils\\LabelManager');
-        $returnData = $labelManager->saveLabels($data['language'], $data['scope'], $labels);
+        $returnData = $labelManager->saveLabels($data->language, $data->scope, $labels);
 
         $this->getContainer()->get('dataManager')->clearCache();
 

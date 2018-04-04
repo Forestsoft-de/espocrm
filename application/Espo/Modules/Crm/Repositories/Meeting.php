@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -36,16 +36,18 @@ class Meeting extends \Espo\Core\Repositories\Event
 {
     protected function beforeSave(Entity $entity, array $options = array())
     {
+        if (!$entity->isNew() && $entity->isAttributeChanged('parentId')) {
+            $entity->set('accountId', null);
+        }
+
         $parentId = $entity->get('parentId');
         $parentType = $entity->get('parentType');
-        if (!empty($parentId) || !empty($parentType)) {
+        if ($parentId && $parentType) {
             $parent = $this->getEntityManager()->getEntity($parentType, $parentId);
-            if (!empty($parent)) {
+            if ($parent) {
                 $accountId = null;
                 if ($parent->getEntityType() == 'Account') {
                     $accountId = $parent->id;
-                } else if ($parent->get('accountId')) {
-                    $accountId = $parent->get('accountId');
                 } else if ($parent->getEntityType() == 'Lead') {
                     if ($parent->get('status') == 'Converted') {
                         if ($parent->get('createdAccountId')) {
@@ -53,14 +55,17 @@ class Meeting extends \Espo\Core\Repositories\Event
                         }
                     }
                 }
-                if (!empty($accountId)) {
+                if (!$accountId && $parent->get('accountId') && $parent->getRelationParam('account', 'entity') == 'Account') {
+                    $accountId = $parent->get('accountId');
+                }
+                if ($accountId) {
                     $entity->set('accountId', $accountId);
                 }
             }
         }
 
         if (!$entity->isNew()) {
-            if ($entity->isFieldChanged('dateStart') && $entity->isFieldChanged('dateStart') && !$entity->isFieldChanged('dateEnd')) {
+            if ($entity->isAttributeChanged('dateStart') && $entity->isAttributeChanged('dateStart') && !$entity->isAttributeChanged('dateEnd')) {
                 $dateEndPrevious = $entity->getFetched('dateEnd');
                 $dateStartPrevious = $entity->getFetched('dateStart');
                 if ($dateStartPrevious && $dateEndPrevious) {

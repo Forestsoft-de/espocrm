@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -62,7 +62,7 @@ Espo.define('views/email-account/fields/folder', 'views/fields/base', function (
                         xhr.errorIsHandled = true;
                     },
                 }).done(function (folders) {
-                    this.createView('modal', 'EmailAccount.Modals.SelectFolder', {
+                    this.createView('modal', 'views/email-account/modals/select-folder', {
                         folders: folders
                     }, function (view) {
                         self.notify(false);

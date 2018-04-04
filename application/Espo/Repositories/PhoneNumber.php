@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -33,6 +33,10 @@ use Espo\ORM\Entity;
 
 class PhoneNumber extends \Espo\Core\ORM\Repositories\RDB
 {
+    protected $processFieldsAfterSaveDisabled = true;
+
+    protected $processFieldsBeforeSaveDisabled = true;
+
     protected function init()
     {
         parent::init();
@@ -133,6 +137,9 @@ class PhoneNumber extends \Espo\Core\ORM\Repositories\RDB
         $sth->execute();
         while ($row = $sth->fetch()) {
             if (!empty($row['entityType']) && !empty($row['entityId'])) {
+                if (!$this->getEntityManager()->hasRepository($row['entityType'])) {
+                    return;
+                }
                 $entity = $this->getEntityManager()->getEntity($row['entityType'], $row['entityId']);
                 if ($entity) {
                     return $entity;

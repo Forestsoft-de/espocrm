@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -123,12 +123,12 @@ class Stream extends \Espo\Core\Services\Base
         if (empty($data)) {
             return;
         }
-        if (empty($data['entityId']) || empty($data['entityType']) || empty($data['userIdList'])) {
+        if (empty($data->entityId) || empty($data->entityType) || empty($data->userIdList)) {
             return;
         }
-        $userIdList = $data['userIdList'];
-        $entityType = $data['entityType'];
-        $entityId = $data['entityId'];
+        $userIdList = $data->userIdList;
+        $entityType = $data->entityType;
+        $entityId = $data->entityId;
 
         $entity = $this->getEntityManager()->getEntity($entityType, $entityId);
         if (!$entity) {
@@ -213,8 +213,13 @@ class Stream extends \Espo\Core\Services\Base
 
         $pdo = $this->getEntityManager()->getPDO();
 
+        $userIdQuotedList = [];
+        foreach ($userIdList as $userId) {
+            $userIdQuotedList[] = $pdo->quote($userId);
+        }
+
         $sql = "
-            DELETE FROM subscription WHERE user_id IN ('".implode("', '", $userIdList)."') AND entity_id = ".$pdo->quote($entity->id) . "
+            DELETE FROM subscription WHERE user_id IN (".implode(', ', $userIdQuotedList).") AND entity_id = ".$pdo->quote($entity->id) . "
         ";
         $pdo->query($sql);
 
@@ -225,7 +230,7 @@ class Stream extends \Espo\Core\Services\Base
         ";
         foreach ($userIdList as $userId) {
             $arr[] = "
-                (".$pdo->quote($entity->id) . ", " . $pdo->quote($entity->getEntityName()) . ", " . $pdo->quote($userId).")
+                (".$pdo->quote($entity->id) . ", " . $pdo->quote($entity->getEntityType()) . ", " . $pdo->quote($userId).")
             ";
         }
 
@@ -1119,10 +1124,10 @@ class Stream extends \Espo\Core\Services\Base
         if (empty($data)) {
             return;
         }
-        if (empty($data['entityId']) || empty($data['entityType'])) {
+        if (empty($data->entityId) || empty($data->entityType)) {
             return;
         }
-        $entity = $this->getEntityManager()->getEntity($data['entityType'], $data['entityId']);
+        $entity = $this->getEntityManager()->getEntity($data->entityType, $data->entityId);
         if (!$entity) return;
 
         $idList = $this->getEntityFolowerIdList($entity);
@@ -1144,7 +1149,5 @@ class Stream extends \Espo\Core\Services\Base
                 }
             }
         }
-
     }
 }
-

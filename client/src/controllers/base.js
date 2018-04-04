@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -39,6 +39,8 @@ Espo.define('controllers/base', 'controller', function (Dep) {
         },
 
         logout: function () {
+            var title = this.getConfig().get('applicationName') || 'EspoCRM';
+            $('head title').text(title);
             this.trigger('logout');
         },
 

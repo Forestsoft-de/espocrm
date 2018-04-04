@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -1149,7 +1149,7 @@ class Activities extends \Espo\Core\Services\Base
         return $result;
     }
 
-    public function getUpcomingActivities($userId, $params = array(), $entityTypeList = null)
+    public function getUpcomingActivities($userId, $params = array(), $entityTypeList = null, $futureDays = null)
     {
         $user = $this->getEntityManager()->getEntity('User', $userId);
         $this->accessCheck($user);
@@ -1158,9 +1158,14 @@ class Activities extends \Espo\Core\Services\Base
             $entityTypeList = $this->getConfig()->get('activitiesEntityList', []);
         }
 
+        if (is_null($futureDays)) {
+            $futureDays = self::UPCOMING_ACTIVITIES_FUTURE_DAYS;
+        }
+        $beforeString = (new \DateTime())->modify('+' . $futureDays . ' days')->format('Y-m-d H:i:s');
+
         $unionPartList = [];
         foreach ($entityTypeList as $entityType) {
-            if (!$this->getMetadata()->get(['scopes', $entityType, 'activity'])) continue;
+            if (!$this->getMetadata()->get(['scopes', $entityType, 'activity']) && $entityType !== 'Task') continue;
             if (!$this->getAcl()->checkScope($entityType, 'read')) continue;
 
             $selectParams = array(
@@ -1168,6 +1173,7 @@ class Activities extends \Espo\Core\Services\Base
                     'id',
                     'name',
                     'dateStart',
+                    'dateEnd',
                     ['VALUE:' . $entityType, 'entityType']
                 ]
             );
@@ -1180,36 +1186,64 @@ class Activities extends \Espo\Core\Services\Base
                 $selectManager->applyTextFilter($params['textFilter'], $selectParams);
             }
 
-            $statusList = $this->getMetadata()->get(['scopes', $entityType, 'activityStatusList'], ['Planned']);
-
             if (!$this->getMetadata()->get(['entityDefs', $entityType, 'fields', 'dateStart'])) continue;
             if (!$this->getMetadata()->get(['entityDefs', $entityType, 'fields', 'dateEnd'])) continue;
 
             $selectManager->applyBoolFilter('onlyMy', $selectParams);
-            $selectManager->addAndWhere([
-                'status' => $statusList
-            ], $selectParams);
 
-            $selectManager->addOrWhere([
-                $selectManager->convertDateTimeWhere(array(
-                    'type' => 'today',
-                    'field' => 'dateStart',
-                    'timeZone' => $selectManager->getUserTimeZone()
-                )),
-                [
+            if ($entityType === 'Task') {
+                $selectManager->applyPrimaryFilter('actual', $selectParams);
+
+                $selectManager->addOrWhere([
+                    [
+                        'dateStart' => null
+                    ],
+                    [
+                        'dateStart!=' => null,
+                        'OR' => array(
+                            $selectManager->convertDateTimeWhere(array(
+                                'type' => 'past',
+                                'attribute' => 'dateStart',
+                                'timeZone' => $selectManager->getUserTimeZone()
+                            )),
+                            $selectManager->convertDateTimeWhere(array(
+                                'type' => 'today',
+                                'attribute' => 'dateStart',
+                                'timeZone' => $selectManager->getUserTimeZone()
+                            )),
+                            $selectManager->convertDateTimeWhere(array(
+                                'type' => 'before',
+                                'attribute' => 'dateStart',
+                                'value' => $beforeString,
+                                'timeZone' => $selectManager->getUserTimeZone()
+                            ))
+                        )
+                    ]
+                ], $selectParams);
+            } else {
+                $selectManager->applyPrimaryFilter('planned', $selectParams);
+
+                $selectManager->addOrWhere([
                     $selectManager->convertDateTimeWhere(array(
-                        'type' => 'future',
-                        'field' => 'dateEnd',
+                        'type' => 'today',
+                        'field' => 'dateStart',
                         'timeZone' => $selectManager->getUserTimeZone()
                     )),
-                    $selectManager->convertDateTimeWhere(array(
-                        'type' => 'before',
-                        'field' => 'dateStart',
-                        'value' => (new \DateTime())->modify('+' . self::UPCOMING_ACTIVITIES_FUTURE_DAYS . ' days')->format('Y-m-d H:i:s'),
-                        'timeZone' => $selectManager->getUserTimeZone()
-                    ))
-                ]
-            ], $selectParams);
+                    [
+                        $selectManager->convertDateTimeWhere(array(
+                            'type' => 'future',
+                            'field' => 'dateEnd',
+                            'timeZone' => $selectManager->getUserTimeZone()
+                        )),
+                        $selectManager->convertDateTimeWhere(array(
+                            'type' => 'before',
+                            'field' => 'dateStart',
+                            'value' => $beforeString,
+                            'timeZone' => $selectManager->getUserTimeZone()
+                        ))
+                    ]
+                ], $selectParams);
+            }
 
             $sql = $this->getEntityManager()->getQuery()->createSelectQuery($entityType, $selectParams);
 
@@ -1232,7 +1266,7 @@ class Activities extends \Espo\Core\Services\Base
         $row = $sth->fetch(\PDO::FETCH_ASSOC);
         $totalCount = $row['COUNT'];
 
-        $unionSql .= " ORDER BY dateStart ASC";
+        $unionSql .= " ORDER BY dateStart ASC, dateEnd ASC, name ASC";
         $unionSql .= " LIMIT :offset, :maxSize";
 
         $sth = $pdo->prepare($unionSql);

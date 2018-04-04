@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -33,16 +33,9 @@ Espo.define('views/inbound-email/record/detail', 'views/record/detail', function
         setup: function () {
             Dep.prototype.setup.call(this);
             this.setupFieldsBehaviour();
-        },
-
-        afterRender: function () {
-            Dep.prototype.afterRender.call(this);
             this.initSslFieldListening();
-
-            if (this.wasFetched()) {
-                this.setFieldReadOnly('fetchSince');
-            }
         },
+
 
         wasFetched: function () {
             if (!this.model.isNew()) {
@@ -51,9 +44,75 @@ Espo.define('views/inbound-email/record/detail', 'views/record/detail', function
             return false;
         },
 
+        initSmtpFieldsControl: function () {
+            this.controlSmtpFields();
+            this.controlSentFolderField();
+            this.listenTo(this.model, 'change:useSmtp', this.controlSmtpFields, this);
+            this.listenTo(this.model, 'change:smtpAuth', this.controlSmtpAuthField, this);
+            this.listenTo(this.model, 'change:storeSentEmails', this.controlSentFolderField, this);
+        },
+
+        controlSmtpFields: function () {
+            if (this.model.get('useSmtp')) {
+                this.showField('smtpHost');
+                this.showField('smtpPort');
+                this.showField('smtpAuth');
+                this.showField('smtpSecurity');
+                this.showField('smtpTestSend');
+                this.showField('fromName');
+                this.showField('smtpIsShared');
+                this.showField('smtpIsForMassEmail');
+                this.showField('storeSentEmails');
+
+                this.setFieldRequired('smtpHost');
+                this.setFieldRequired('smtpPort');
+
+                this.controlSmtpAuthField();
+            } else {
+                this.hideField('smtpHost');
+                this.hideField('smtpPort');
+                this.hideField('smtpAuth');
+                this.hideField('smtpUsername');
+                this.hideField('smtpPassword');
+                this.hideField('smtpSecurity');
+                this.hideField('smtpTestSend');
+                this.hideField('fromName');
+                this.hideField('smtpIsShared');
+                this.hideField('smtpIsForMassEmail');
+                this.hideField('storeSentEmails');
+                this.hideField('sentFolder');
+
+                this.setFieldNotRequired('smtpHost');
+                this.setFieldNotRequired('smtpPort');
+                this.setFieldNotRequired('smtpUsername');
+            }
+        },
+
+        controlSentFolderField: function () {
+            if (this.model.get('useSmtp') && this.model.get('storeSentEmails')) {
+                this.showField('sentFolder');
+                this.setFieldRequired('sentFolder');
+            } else {
+                this.hideField('sentFolder');
+                this.setFieldNotRequired('sentFolder');
+            }
+        },
+
+        controlSmtpAuthField: function () {
+            if (this.model.get('smtpAuth')) {
+                this.showField('smtpUsername');
+                this.showField('smtpPassword');
+                this.setFieldRequired('smtpUsername');
+            } else {
+                this.hideField('smtpUsername');
+                this.hideField('smtpPassword');
+                this.setFieldNotRequired('smtpUsername');
+            }
+        },
+
         controlStatusField: function () {
             var list = ['username', 'port', 'host', 'monitoredFolders'];
-            if (this.model.get('status') === 'Active') {
+            if (this.model.get('status') === 'Active' && this.model.get('useImap')) {
                 list.forEach(function (item) {
                     this.setFieldRequired(item);
                 }, this);
@@ -71,6 +130,19 @@ Espo.define('views/inbound-email/record/detail', 'views/record/detail', function
                     this.controlStatusField();
                 }
             }, this);
+            this.listenTo(this.model, 'change:useImap', function (model, value, o) {
+                if (o.ui) {
+                    this.controlStatusField();
+                }
+            }, this);
+
+            if (this.wasFetched()) {
+                this.setFieldReadOnly('fetchSince');
+            } else {
+                this.setFieldNotReadOnly('fetchSince');
+            }
+
+            this.initSmtpFieldsControl();
 
             var handleRequirement = function (model) {
                 if (model.get('createCase')) {
@@ -146,18 +218,27 @@ Espo.define('views/inbound-email/record/detail', 'views/record/detail', function
         },
 
         initSslFieldListening: function () {
-            var sslField = this.getFieldView('ssl');
-            this.listenTo(sslField, 'change', function () {
-                var ssl = sslField.fetch()['ssl'];
-                if (ssl) {
-                    this.model.set('port', '993');
-                } else {
-                    this.model.set('port', '143');
+            this.listenTo(this.model, 'change:ssl', function (model, value, o) {
+                if (o.ui) {
+                    if (value) {
+                        this.model.set('port', 993);
+                    } else {
+                        this.model.set('port', 143);
+                    }
+                }
+            }, this);
+
+            this.listenTo(this.model, 'change:smtpSecurity', function (model, value, o) {
+                if (o.ui) {
+                    if (value === 'SSL') {
+                        this.model.set('smtpPort', 465);
+                    } else if (value === 'TLS') {
+                        this.model.set('smtpPort', 587);
+                    } else {
+                        this.model.set('smtpPort', 25);
+                    }
                 }
             }, this);
         }
-
     });
-
 });
-

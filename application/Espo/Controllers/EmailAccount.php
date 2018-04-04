@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -59,9 +59,9 @@ class EmailAccount extends \Espo\Core\Controllers\Record
             throw new BadRequest();
         }
 
-        if (is_null($data['password'])) {
-            $emailAccount = $this->getEntityManager()->getEntity('EmailAccount', $data['id']);
-            if (!$emailAccount) {
+        if (is_null($data->password)) {
+            $emailAccount = $this->getEntityManager()->getEntity('EmailAccount', $data->id);
+            if (!$emailAccount || !$emailAccount->id) {
                 throw new Error();
             }
 
@@ -69,10 +69,10 @@ class EmailAccount extends \Espo\Core\Controllers\Record
                 throw new Forbidden();
             }
 
-            $data['password'] = $this->getContainer()->get('crypt')->decrypt($emailAccount->get('password'));
+            $data->password = $this->getContainer()->get('crypt')->decrypt($emailAccount->get('password'));
         }
 
-        return $this->getRecordService()->testConnection($data);
+        return $this->getRecordService()->testConnection(get_object_vars($data));
     }
 }
 

@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -98,14 +98,25 @@ Espo.define('views/record/panels/relationship', ['views/record/panels/bottom', '
                 if (this.defs.selectBoolFilterList) {
                     data.boolFilterList = this.defs.selectBoolFilterList;
                 }
+
                 this.actionList.unshift({
                     label: 'Select',
                     action: this.defs.selectAction || 'selectRelated',
-                    data: data
+                    data: data,
+                    acl: 'edit',
+                    aclScope: this.model.name
                 });
             }
 
+            this.setupActions();
+
             var layoutName = 'listSmall';
+            this.setupListLayout();
+
+            if (this.listLayoutName) {
+                layoutName = this.listLayoutName;
+            }
+
             var listLayout = null;
             var layout = this.defs.layout || null;
             if (layout) {
@@ -115,9 +126,20 @@ Espo.define('views/record/panels/relationship', ['views/record/panels/bottom', '
                      layoutName = 'listRelationshipCustom';
                      listLayout = layout;
                 }
-             }
+            }
+
             var sortBy = this.defs.sortBy || null;
             var asc = this.defs.asc || null;
+
+            if (this.defs.orderBy) {
+                sortBy = this.defs.orderBy;
+                asc = true;
+                if (this.defs.orderDirection) {
+                    if (this.defs.orderDirection && (this.defs.orderDirection === true || this.defs.orderDirection.toLowerCase() === 'DESC')) {
+                        asc = false;
+                    }
+                }
+            }
 
             this.wait(true);
             this.getCollectionFactory().create(this.scope, function (collection) {
@@ -146,6 +168,10 @@ Espo.define('views/record/panels/relationship', ['views/record/panels/bottom', '
                     }, this);
                 }
 
+                this.listenTo(this.model, 'update-all', function () {
+                    collection.fetch();
+                }, this);
+
                 var viewName = this.defs.recordListView || this.getMetadata().get('clientDefs.' + this.scope + '.recordViews.list') || 'Record.List';
 
                 this.once('after:render', function () {
@@ -170,6 +196,10 @@ Espo.define('views/record/panels/relationship', ['views/record/panels/bottom', '
 
             this.setupFilterActions();
         },
+
+        setupListLayout: function () {},
+
+        setupActions: function () {},
 
         setupFilterActions: function () {
             if (this.filterList && this.filterList.length) {

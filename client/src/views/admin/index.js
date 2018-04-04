@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -34,7 +34,8 @@ Espo.define('views/admin/index', 'view', function (Dep) {
         data: function () {
             return {
                 panelDataList: this.panelDataList,
-                iframeUrl: this.iframeUrl
+                iframeUrl: this.iframeUrl,
+                iframeHeight: this.getConfig().get('adminPanelIframeHeight') || 874
             };
         },
 
@@ -60,7 +61,16 @@ Espo.define('views/admin/index', 'view', function (Dep) {
                 return v1.order > v2.order;
             }.bind(this));
 
+            var iframeParams = [
+                'version=' + encodeURIComponent(this.getConfig().get('version')),
+                'css=' + encodeURIComponent(this.getConfig().get('siteUrl') + '/' + this.getThemeManager().getStylesheet())
+            ];
             this.iframeUrl = this.getConfig().get('adminPanelIframeUrl') || 'https://s.espocrm.com/';
+            if (~this.iframeUrl.indexOf('?')) {
+                this.iframeUrl += '&' + iframeParams.join('&');
+            } else {
+                this.iframeUrl += '?' + iframeParams.join('&');
+            }
 
             if (!this.getConfig().get('adminNotificationsDisabled')) {
                 this.createView('notificationsPanel', 'views/admin/panels/notifications', {

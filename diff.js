@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -31,7 +31,20 @@ if (process.argv.length < 3) {
     throw new Error("No 'version from' passed");
 }
 
-var acceptedVersionName = process.argv[3] || versionFrom;
+var acceptedVersionName = versionFrom;
+
+var isDev = false;
+
+if (process.argv.length > 2) {
+    for (var i in process.argv) {
+        if (process.argv[i] === '--dev') {
+            isDev = true;
+        }
+        if (~process.argv[i].indexOf('--acceptedVersion=')) {
+            acceptedVersionName = process.argv[i].substr(('--acceptedVersion=').length);
+        }
+    }
+}
 
 var path = require('path');
 var fs = require('fs');
@@ -76,15 +89,9 @@ execute('git diff --name-only ' + versionFrom, function (stdout) {
 
     fileList.push('client/espo.min.js');
 
-    fileList.push('client/css/espo.css');
-    fileList.push('client/css/espo-vertical.css');
-    fileList.push('client/css/sakura.css');
-    fileList.push('client/css/sakura-vertical.css');
-    fileList.push('client/css/violet.css');
-    fileList.push('client/css/violet-vertical.css');
-    fileList.push('client/css/hazyblue.css');
-    fileList.push('client/css/hazyblue-vertical.css');
-    fileList.push('client/css/espo-rtl.css');
+    fs.readdirSync('client/css/espo/').forEach(function (file) {
+        fileList.push('client/css/espo/' + file);
+    });
 
     fs.writeFileSync(diffFilePath, fileList.join('\n'));
 
@@ -124,6 +131,10 @@ execute('git diff --name-only ' + versionFrom, function (stdout) {
                         versionList.push(tag);
                     }
                 });
+
+                if (isDev) {
+                    versionList = [];
+                }
 
                 var manifest = {
                     "name": "EspoCRM Upgrade "+acceptedVersionName+" to "+version,

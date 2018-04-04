@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -133,16 +133,16 @@ class Helper
      *
      * @return array
      */
-    public function getAdditionalFieldList($fieldName, array $fieldParams, array $definitionList = null)
+    public function getAdditionalFieldList($fieldName, array $fieldParams, array $definitionList)
     {
-        if (empty($fieldParams['type'])) {
+        if (empty($fieldParams['type']) || empty($definitionList)) {
             return;
         }
 
         $fieldType = $fieldParams['type'];
-        $fieldDefinition = isset($definitionList[$fieldType]) ? $definitionList[$fieldType] : $this->getMetadata()->get('fields.'.$fieldType);
+        $fieldDefinition = isset($definitionList[$fieldType]) ? $definitionList[$fieldType] : null;
 
-        if (!empty($fieldDefinition['fields']) && is_array($fieldDefinition['fields'])) {
+        if (isset($fieldDefinition) && !empty($fieldDefinition['fields']) && is_array($fieldDefinition['fields'])) {
 
             $copiedParams = array_intersect_key($fieldParams, array_flip($this->copiedDefParams));
 

@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -26,7 +26,7 @@
  * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
  ************************************************************************/
 
-Espo.define('crm:views/knowledge-base-article/list', 'crm:views/document/list', function (Dep) {
+Espo.define('crm:views/knowledge-base-article/list', 'views/list-with-categories', function (Dep) {
 
     return Dep.extend({
 
@@ -34,18 +34,7 @@ Espo.define('crm:views/knowledge-base-article/list', 'crm:views/document/list', 
 
         categoryField: 'categories',
 
-        categoryFilterType: 'inCategory',
-
-        getCreateAttributes: function () {
-            if (this.currentCategoryId) {
-                var names = {};
-                names[this.currentCategoryId] = this.currentCategoryName;
-                return {
-                    categoriesIds: [this.currentCategoryId],
-                    categoriesNames: names
-                };
-            }
-        }
+        categoryFilterType: 'inCategory'
 
     });
 

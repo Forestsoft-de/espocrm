@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -34,32 +34,5 @@ use \Espo\Core\Exceptions\BadRequest;
 
 class Attachment extends \Espo\Core\Controllers\Record
 {
-    public function actionUpload($params, $data, $request)
-    {
-        if (!$request->isPost()) {
-            throw new BadRequest();
-        }
-
-        if (!$this->getAcl()->checkScope('Attachment', 'create')) {
-            throw new Forbidden();
-        }
-
-        $arr = explode(',', $data);
-        if (count($arr) > 1) {
-            list($prefix, $contents) = $arr;
-            $contents = base64_decode($contents);
-        } else {
-            $contents = '';
-        }
-
-        $attachment = $this->getEntityManager()->getEntity('Attachment');
-        $this->getEntityManager()->saveEntity($attachment);
-        $this->getContainer()->get('fileStorageManager')->putContents($attachment, $contents);
-
-        return array(
-            'attachmentId' => $attachment->id
-        );
-    }
 
 }
-

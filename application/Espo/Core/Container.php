@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -217,7 +217,8 @@ class Container
             $this->get('acl'),
             $this->get('aclManager'),
             $this->get('metadata'),
-            $this->get('config')
+            $this->get('config'),
+            $this->get('injectableFactory')
         );
     }
 
@@ -295,10 +296,20 @@ class Container
         );
     }
 
+    protected function loadBaseLanguage()
+    {
+        return new \Espo\Core\Utils\Language(
+            'en_US',
+            $this->get('fileManager'),
+            $this->get('metadata'),
+            $this->get('useCache')
+        );
+    }
+
     protected function loadDefaultLanguage()
     {
         return new \Espo\Core\Utils\Language(
-            null,
+            \Espo\Core\Utils\Language::detectLanguage($this->get('config')),
             $this->get('fileManager'),
             $this->get('metadata'),
             $this->get('useCache')
@@ -329,8 +340,6 @@ class Container
     protected function loadFieldManager()
     {
         return new \Espo\Core\Utils\FieldManager(
-            $this->get('metadata'),
-            $this->get('language'),
             $this
         );
     }

@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -48,7 +48,7 @@ Espo.define('crm:views/calendar/calendar', ['view', 'lib!full-calendar'], functi
 
         modeList: [],
 
-        fullCalendarModeList: ['month', 'agendaWeek', 'agendaDay', 'basicWeek', 'basicDay'],
+        fullCalendarModeList: ['month', 'agendaWeek', 'agendaDay', 'basicWeek', 'basicDay', 'listWeek'],
 
         defaultMode: 'agendaWeek',
 
@@ -75,7 +75,7 @@ Espo.define('crm:views/calendar/calendar', ['view', 'lib!full-calendar'], functi
 
             return {
                 mode: this.mode,
-                modeList: this.modeList,
+                modeDataList: this.getModeDataList(),
                 header: this.header,
                 scopeFilterDataList: scopeFilterDataList
             };
@@ -171,6 +171,18 @@ Espo.define('crm:views/calendar/calendar', ['view', 'lib!full-calendar'], functi
             this.storeEnabledScopeList(this.enabledScopeList);
 
             this.$calendar.fullCalendar('refetchEvents');
+        },
+
+        getModeDataList: function () {
+            var list = [];
+            this.modeList.forEach(function (name) {
+                var o = {
+                    name: name,
+                    labelShort: this.translate(name, 'modes', 'Calendar').substr(0, 2)
+                };
+                list.push(o);
+            }, this);
+            return list;
         },
 
         getStoredEnabledScopeList: function () {
@@ -376,6 +388,7 @@ Espo.define('crm:views/calendar/calendar', ['view', 'lib!full-calendar'], functi
         },
 
         adjustSize: function () {
+            if (this.isRemoved()) return;
             var height = this.getCalculatedHeight();
             this.$calendar.fullCalendar('option', 'contentHeight', height);
         },
@@ -389,10 +402,21 @@ Espo.define('crm:views/calendar/calendar', ['view', 'lib!full-calendar'], functi
 
             var slotDuration = '00:' + this.slotDuration + ':00';
 
+            var timeFormat = this.getDateTime().timeFormat;
+
+            var slotLabelFormat;
+            if (~timeFormat.indexOf('a')) {
+                slotLabelFormat = 'h(:mm)a';
+            } else if (~timeFormat.indexOf('A')) {
+                slotLabelFormat = 'h(:mm)A';
+            } else {
+                slotLabelFormat = timeFormat;
+            }
+
             var options = {
                 header: false,
-                axisFormat: this.getDateTime().timeFormat,
-                timeFormat: this.getDateTime().timeFormat,
+                slotLabelFormat: slotLabelFormat,
+                timeFormat: timeFormat,
                 defaultView: this.mode,
                 weekNumbers: true,
                 weekNumberCalculation: 'ISO',
@@ -405,6 +429,7 @@ Espo.define('crm:views/calendar/calendar', ['view', 'lib!full-calendar'], functi
                 slotDuration: slotDuration,
                 snapDuration: this.slotDuration * 60 * 1000,
                 timezone: this.getDateTime().timeZone,
+                longPressDelay: 300,
                 windowResize: function () {
                     this.adjustSize();
                 }.bind(this),
@@ -547,11 +572,15 @@ Espo.define('crm:views/calendar/calendar', ['view', 'lib!full-calendar'], functi
                 }.bind(this),
                 allDayText: '',
                 firstHour: 8,
-                columnFormat: {
-                    week: 'ddd DD',
-                    day: 'ddd DD',
-                },
                 weekNumberTitle: '',
+                views: {
+                    week: {
+                        columnFormat: 'ddd DD',
+                    },
+                    day: {
+                        columnFormat: 'ddd DD',
+                    }
+                }
             };
 
             if (!this.options.height) {

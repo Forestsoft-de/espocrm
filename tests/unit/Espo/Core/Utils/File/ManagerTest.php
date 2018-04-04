@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@ namespace tests\unit\Espo\Core\Utils\File;
 use tests\unit\ReflectionHelper;
 use Espo\Core\Utils\Util;
 
-class ManagerTest extends \PHPUnit_Framework_TestCase
+class ManagerTest extends \PHPUnit\Framework\TestCase
 {
     protected $object;
 
@@ -413,5 +413,97 @@ class ManagerTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertEquals($result, $this->reflection->invokeMethod('getExistsPath', array($input)) );
     }
-}
 
+    public function testCopyTestCase1()
+    {
+        $path = 'tests/unit/testData/FileManager/copy/testCase1';
+        $cachePath = $this->cachePath . '/copy/testCase1';
+
+        $expectedResult = [
+            'custom/Espo/Custom/Modules/ExtensionTest/File.json',
+            'custom/Espo/Custom/Modules/ExtensionTest/File.php',
+            'custom/Espo/Custom/Modules/TestModule/SubFolder/Tester.txt',
+        ];
+
+        $result = $this->object->copy($path, $cachePath, true);
+
+        if ($result) {
+            $this->assertEquals($expectedResult, $this->object->getFileList($cachePath, true, '', true, true));
+            $this->object->removeInDir($cachePath);
+        }
+    }
+
+    public function testCopyTestCase2()
+    {
+        $path = 'tests/unit/testData/FileManager/copy/testCase2';
+        $cachePath = $this->cachePath . '/copy/testCase2';
+
+        $expectedResult = [
+            'custom/Espo/Custom/test1.php',
+            'data/test2.php',
+            'data/upload/5a86d9bf1154968dc',
+            'test0.php'
+        ];
+
+        $result = $this->object->copy($path, $cachePath, true);
+
+        if ($result) {
+            $this->assertEquals($expectedResult, $this->object->getFileList($cachePath, true, '', true, true));
+            $this->object->removeInDir($cachePath);
+        }
+    }
+
+    public function testCopyTestCase3()
+    {
+        $path = 'tests/unit/testData/FileManager/copy/testCase3';
+        $cachePath = $this->cachePath . '/copy/testCase3';
+
+        $expectedResult = [
+            'custom/Espo/Custom/test1.php',
+            'data/test2.php',
+            'data/upload/5a86d9bf1154968dc',
+            'test0.php'
+        ];
+
+        $fileList = $this->object->getFileList($path, true, '', true, true);
+
+        $this->assertEquals($expectedResult, $fileList, "Expected Result and File List");
+
+        $result = $this->object->copy($path, $cachePath, true, $fileList);
+
+        if ($result) {
+            $this->assertEquals($expectedResult, $this->object->getFileList($cachePath, true, '', true, true), "Expected Result and List of copied files");
+            $this->object->removeInDir($cachePath);
+        }
+    }
+
+    public function testCopyTestCase4()
+    {
+        $path = 'tests/unit/testData/FileManager/copy/testCase4';
+        $cachePath = $this->cachePath . '/copy/testCase4';
+
+        $expectedResult = [
+            'custom',
+            'custom/Espo',
+            'custom/Espo/Custom',
+            'custom/Espo/Custom/test1.php',
+            'data',
+            'data/test2.php',
+            'data/upload',
+            'data/upload/5a86d9bf1154968dc',
+            'test0.php'
+        ];
+
+        $fileList = $this->object->getFileList($path, true, '', null, true);
+
+        $this->assertEquals($expectedResult, $fileList, "Expected Result and File List");
+
+        $result = $this->object->copy($path, $cachePath, true, $fileList);
+
+        if ($result) {
+            $this->assertEquals($expectedResult, $this->object->getFileList($cachePath, true, '', null, true), "Expected Result and List of copied files");
+            $this->object->removeInDir($cachePath);
+        }
+    }
+
+}

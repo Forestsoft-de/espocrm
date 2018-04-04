@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -41,6 +41,18 @@ class RecordTree extends Record
     const MAX_DEPTH = 2;
 
     private $seed = null;
+
+    protected $subjectEntityType = null;
+
+    protected $categoryField = null;
+
+    public function __construct()
+    {
+        parent::__construct();
+        if (!$this->subjectEntityType) {
+            $this->subjectEntityType = substr($this->entityType, 0, strlen($this->entityType) -8 );
+        }
+    }
 
     public function getTree($parentId = null, $params = array(), $level = 0, $maxDepth = null)
     {
@@ -91,12 +103,25 @@ class RecordTree extends Record
 
     protected function checkFilterOnlyNotEmpty()
     {
-
+        if (!$this->getAcl()->checkScope($this->subjectEntityType, 'create')) {
+            return true;
+        }
     }
 
     protected function checkItemIsEmpty(Entity $entity)
     {
+        if (!$this->categoryField) return false;
 
+        $selectManager = $this->getSelectManager($this->subjectEntityType);
+
+        $selectParams = $selectManager->getEmptySelectParams();
+        $selectManager->applyInCategory($this->categoryField, $entity->id, $selectParams);
+        $selectManager->applyAccess($selectParams);
+
+        if ($this->getEntityManager()->getRepository($this->subjectEntityType)->findOne($selectParams)) {
+            return false;
+        }
+        return true;
     }
 
     public function getTreeItemPath($parentId = null)
@@ -134,11 +159,12 @@ class RecordTree extends Record
         return false;
     }
 
-    protected function beforeCreate(Entity $entity, array $data = array())
+    protected function beforeCreateEntity(Entity $entity, $data)
     {
-        parent::beforeCreate($entity, $data);
-        if (!empty($data['parentId'])) {
-            $parent = $this->getEntityManager()->getEntity($this->getEntityType(), $data['parentId']);
+        parent::beforeCreateEntity($entity, $data);
+
+        if (!empty($data->parentId)) {
+            $parent = $this->getEntityManager()->getEntity($this->getEntityType(), $data->parentId);
             if (!$parent) {
                 throw new Error("Tried to create tree item entity with not existing parent.");
             }
@@ -150,7 +176,7 @@ class RecordTree extends Record
 
     public function updateEntity($id, $data)
     {
-        if (!empty($data['parentId']) && $data['parentId'] == $id) {
+        if (!empty($data->parentId) && $data->parentId == $id) {
             throw new Forbidden();
         }
 
@@ -164,5 +190,44 @@ class RecordTree extends Record
         }
         return parent::linkEntity($id, $link, $foreignId);
     }
-}
 
+    public function getLastChildrenIdList($parentId = null)
+    {
+        $selectParams = $this->getSelectManager($this->entityType)->getSelectParams([], true, true);
+        $selectParams['whereClause'][] = array(
+            'parentId' => $parentId
+        );
+
+        $idList = [];
+
+        $includingRecords = false;
+        if ($this->checkFilterOnlyNotEmpty()) {
+            $includingRecords = true;
+        }
+
+        $collection = $this->getRepository()->find($selectParams);
+        foreach ($collection as $entity) {
+            $selectParams2 = $this->getSelectManager($this->entityType)->getSelectParams([], true, true);
+            $selectParams2['whereClause'][] = array(
+                'parentId' => $entity->id
+            );
+            if (!$this->getRepository()->count($selectParams2)) {
+                $idList[] = $entity->id;
+            } else {
+                if ($includingRecords) {
+                    $isNotEmpty = false;
+                    foreach ($this->getRepository()->find($selectParams2) as $subEntity) {
+                        if (!$this->checkItemIsEmpty($subEntity)) {
+                            $isNotEmpty = true;
+                            break;
+                        }
+                    }
+                    if (!$isNotEmpty) {
+                        $idList[] = $entity->id;
+                    }
+                }
+            }
+        }
+        return $idList;
+    }
+}

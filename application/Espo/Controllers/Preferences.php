@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -93,11 +93,11 @@ class Preferences extends \Espo\Core\Controllers\Base
         }
 
         foreach ($this->getAcl()->getScopeForbiddenAttributeList('Preferences', 'edit') as $attribute) {
-            unset($data[$attribute]);
+            unset($data->$attribute);
         }
 
-        if (array_key_exists('smtpPassword', $data)) {
-            $data['smtpPassword'] = $this->getCrypt()->encrypt($data['smtpPassword']);
+        if (property_exists($data, 'smtpPassword')) {
+            $data->smtpPassword = $this->getCrypt()->encrypt($data->smtpPassword);
         }
 
         $user = $this->getEntityManager()->getEntity('User', $userId);
@@ -113,7 +113,7 @@ class Preferences extends \Espo\Core\Controllers\Base
 
             $entity->clear('smtpPassword');
 
-            return $entity->toArray();
+            return $entity->getValueMap();
         }
         throw new Error();
     }
@@ -140,7 +140,7 @@ class Preferences extends \Espo\Core\Controllers\Base
             $entity->clear($attribute);
         }
 
-        return $entity->toArray();
+        return $entity->getValueMap();
     }
 }
 

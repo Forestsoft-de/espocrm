@@ -10,15 +10,6 @@
          "type": "text"
       },
       {
-         "name": "maxLength",
-         "type": "int"
-      },
-      {
-         "name": "seeMoreDisabled",
-         "type": "bool",
-         "tooltip": true
-      },
-      {
          "name": "height",
          "type": "int"
       },

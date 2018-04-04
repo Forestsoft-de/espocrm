@@ -48,7 +48,8 @@
         },
         "contacts": {
             "type": "linkMultiple",
-            "view": "crm:views/case/fields/contacts"
+            "view": "crm:views/case/fields/contacts",
+            "orderBy": "name"
         },
         "inboundEmail": {
             "type": "link",
@@ -79,6 +80,10 @@
         "teams": {
             "type": "linkMultiple",
             "view": "views/fields/teams"
+        },
+        "attachments": {
+            "type": "attachmentMultiple",
+            "layoutListDisabled": true
         }
     },
     "links": {

@@ -21,12 +21,13 @@
         <script type="text/javascript" src="{{basePath}}client/lib/bootstrap.min.js"></script>
         <script type="text/javascript" src="{{basePath}}client/lib/bootstrap-datepicker.js"></script>
         <script type="text/javascript" src="{{basePath}}client/lib/bull.js"></script>
+        <script type="text/javascript" src="{{basePath}}client/lib/marked.min.js"></script>
 
         <script type="text/javascript" src="{{basePath}}client/src/loader.js" data-base-path="{{basePath}}"></script>
         <script type="text/javascript" src="{{basePath}}client/src/utils.js"></script>
         <script type="text/javascript" src="{{basePath}}client/src/exceptions.js"></script>
 
-        <link href="{{basePath}}{{stylesheet}}" rel="stylesheet" id='main-stylesheet'>
+        <link href="{{basePath}}{{stylesheet}}?r={{cacheTimestamp}}" rel="stylesheet" id='main-stylesheet'>
         <link rel="icon" href="{{basePath}}client/img/favicon.ico" type="image/x-icon">
         <link rel="shortcut icon" href="{{basePath}}client/img/favicon.ico" type="image/x-icon">
 
@@ -48,7 +49,7 @@
     <body>
         <div class="container content"></div>
         <footer>
-            <p class="credit small">&copy; 2017 <a href="http://www.espocrm.com" title="Powered by EspoCRM" alt="Visit official EspoCRM website">EspoCRM</a></p>
+            <p class="credit small">&copy; 2018 <a href="http://www.espocrm.com" title="Powered by EspoCRM" alt="Visit official EspoCRM website">EspoCRM</a></p>
         </footer>
     </body>
 </html>

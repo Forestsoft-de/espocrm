@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -48,6 +48,22 @@ Espo.define('views/admin/notifications', 'views/settings/record/edit', function 
                         fields: ['assignmentEmailNotificationsEntityList']
                     }
                 ]
+            },
+            'adminNotifications': {
+                map: {
+                    true: [
+                        {
+                            action: 'show',
+                            fields: ['adminNotificationsNewVersion']
+                        }
+                    ]
+                },
+                default: [
+                    {
+                        action: 'hide',
+                        fields: ['adminNotificationsNewVersion']
+                    }
+                ]
             }
         },
 
@@ -65,8 +81,10 @@ Espo.define('views/admin/notifications', 'views/settings/record/edit', function 
         controlStreamEmailNotificationsEntityList: function () {
             if (this.model.get('streamEmailNotifications') || this.model.get('portalStreamEmailNotifications')) {
                 this.showField('streamEmailNotificationsEntityList');
+                this.showField('streamEmailNotificationsTypeList');
             } else {
                 this.hideField('streamEmailNotificationsEntityList');
+                this.hideField('streamEmailNotificationsTypeList');
             }
         }
 

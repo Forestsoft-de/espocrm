@@ -19,12 +19,18 @@
             "displayRecords": {
                 "type": "enumInt",
                 "options": [3,4,5,10,15,20,30,50]
+            },
+            "futureDays": {
+                "type": "int",
+                "min": 0,
+                "required": true
             }
         },
         "defaults": {
-            "displayRecords": 5,
+            "displayRecords": 10,
             "autorefreshInterval": 0.5,
-            "enabledScopeList": ["Meeting", "Call"]
+            "futureDays": 3,
+            "enabledScopeList": ["Meeting", "Call", "Task"]
         },
         "layout": [
             {
@@ -36,6 +42,10 @@
                     [
                         {"name": "displayRecords"},
                         {"name": "enabledScopeList"}
+                    ],
+                    [
+                        {"name": "futureDays"},
+                        false
                     ]
                 ]
             }

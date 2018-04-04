@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -64,6 +64,11 @@ class NextNumber extends \Espo\Core\Hooks\Base
 
         foreach ($fieldDefs as $fieldName => $defs) {
             if (isset($defs['type']) && $defs['type'] === 'number') {
+                if (!empty($options['import'])) {
+                    if ($entity->has($fieldName)) {
+                        continue;
+                    }
+                }
                 if (!$entity->isNew()) {
                     if ($entity->isAttributeChanged($fieldName)) {
                         $entity->set($fieldName, $entity->getFetched($fieldName));

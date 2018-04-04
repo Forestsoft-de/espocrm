@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -36,6 +36,8 @@ Espo.define('views/fields/link-multiple-with-role', 'views/fields/link-multiple'
 
         roleFieldIsForeign: true,
 
+        emptyRoleValue: null,
+
         setup: function () {
             Dep.prototype.setup.call(this);
 
@@ -67,9 +69,16 @@ Espo.define('views/fields/link-multiple-with-role', 'views/fields/link-multiple'
 
         getDetailLinkHtml: function (id, name) {
             name = name || this.nameHash[id];
+            if (!name && id) {
+                name = this.translate(this.foreignScope, 'scopeNames');
+            }
 
             var role = (this.columns[id] || {})[this.columnName] || '';
             var roleHtml = '';
+
+            if (this.emptyRoleValue && role === this.emptyRoleValue) {
+                role = '';
+            }
             if (role != '') {
                 roleHtml = '<span class="text-muted small"> &#187; ' +
                 this.getHelper().stripTags(this.getLanguage().translateOption(role, this.roleField, this.roleFieldScope)) +

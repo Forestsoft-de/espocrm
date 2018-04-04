@@ -41,7 +41,9 @@
         "Global": "Global",
         "Preferences": "Preferences",
         "EmailAddress": "Email Address",
-        "PhoneNumber": "Phone Number"
+        "PhoneNumber": "Phone Number",
+        "AuthLogRecord": "Auth Log Record",
+        "AuthFailLogRecord": "Auth Fail Log Record"
     },
     "scopeNamesPlural": {
         "Email": "Emails",
@@ -72,7 +74,9 @@
         "ActionHistoryRecord": "Action History",
         "AuthToken": "Auth Tokens",
         "UniqueId": "Unique IDs",
-        "LastViewed": "Last Viewed"
+        "LastViewed": "Last Viewed",
+        "AuthLogRecord": "Auth Log",
+        "AuthFailLogRecord": "Auth Fail Log"
     },
     "labels": {
         "Misc": "Misc",
@@ -217,7 +221,12 @@
         "Attribute": "Attribute",
         "Function": "Function",
         "Self-Assign": "Self-Assign",
-        "Self-Assigned": "Self-Assigned"
+        "Self-Assigned": "Self-Assigned",
+        "Expand": "Expand",
+        "Collapse": "Collapse",
+        "New notifications": "New notifications",
+        "Manage Categories": "Manage Categories",
+        "Manage Folders": "Manage Folders"
     },
     "messages": {
         "pleaseWait": "Please wait...",
@@ -237,9 +246,11 @@
         "fieldShouldAfter": "{field} should be after {otherField}",
         "fieldShouldBefore": "{field} should be before {otherField}",
         "fieldShouldBeBetween": "{field} should be between {min} and {max}",
-        "fieldShouldBeLess": "{field} should be less then {value}",
-        "fieldShouldBeGreater": "{field} should be greater then {value}",
+        "fieldShouldBeLess": "{field} shouldn't be greater then {value}",
+        "fieldShouldBeGreater": "{field} shouldn't be less then {value}",
         "fieldBadPasswordConfirm": "{field} not confirmed properly",
+        "fieldMaxFileSizeError": "File should not exceed {max} Mb",
+        "fieldIsUploading": "Uploading in progress",
         "resetPreferencesDone": "Preferences has been reset to defaults",
         "confirmation": "Are you sure?",
         "unlinkAllConfirmation": "Are you sure you want to unlink all related records?",
@@ -254,7 +265,7 @@
         "massRemoveResultSingle": "{count} record has been removed",
         "noRecordsRemoved": "No records were removed",
         "clickToRefresh": "Click to refresh",
-        "streamPostInfo": "Type <strong>@username</strong> to mention users in the post.\n\nAvailable markdown syntax:\n`<code>code</code>`\n**<strong>strong text</strong>**\n*<em>emphasized text</em>*\n~<del>deleted text</del>~\n> blockquote\n[link text](url)",
+        "streamPostInfo": "Type <strong>@username</strong> to mention users in the post.\n\nAvailable markdown syntax:\n`<code>code</code>`\n```<code>multiline code</code>```\n**<strong>strong text</strong>**\n*<em>emphasized text</em>*\n~~<del>deleted text</del>~~\n> blockquote\n[link text](url)",
         "writeYourCommentHere": "Write your comment here",
         "writeMessageToUser": "Write a message to {user}",
         "writeMessageToSelf": "Write a message on your stream",
@@ -297,6 +308,7 @@
         "assignedUser": "Assigned User",
         "assignedUsers": "Assigned Users",
         "emailAddress": "Email",
+        "emailAddressData": "Email Address Data",
         "assignedUserName": "Assigned User Name",
         "teams": "Teams",
         "createdAt": "Created At",
@@ -311,10 +323,13 @@
         "phoneNumberFax": "Phone (Fax)",
         "phoneNumberOffice": "Phone (Office)",
         "phoneNumberOther": "Phone (Other)",
+        "phoneNumberData": "Phone Number Data",
         "order": "Order",
         "parent": "Parent",
         "children": "Children",
-        "id": "ID"
+        "id": "ID",
+        "ids": "IDs",
+        "names": "Names"
     },
     "links": {
         "assignedUser": "Assigned User",
@@ -429,6 +444,12 @@
         "dayNames": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
         "dayNamesShort": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
         "dayNamesMin": ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
+    },
+    "durationUnits": {
+        "d": "d",
+        "h": "h",
+        "m": "m",
+        "s": "s"
     },
     "options": {
         "salutationName": {

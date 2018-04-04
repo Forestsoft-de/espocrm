@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -49,11 +49,10 @@ class EmailNotification extends \Espo\Core\Services\Base
             'fileManager',
             'selectManagerFactory',
             'templateFileManager',
-            'injectableFactory'
+            'injectableFactory',
+            'config'
         ]);
     }
-
-    protected $noteNotificationTypeList = ['Post', 'Status', 'EmailReceived'];
 
     protected $emailNotificationEntityHandlerHash = array();
 
@@ -77,6 +76,11 @@ class EmailNotification extends \Espo\Core\Services\Base
         return $this->getInjection('dateTime');
     }
 
+    protected function getConfig()
+    {
+        return $this->getInjection('config');
+    }
+
     protected function getTemplateFileManager()
     {
         return $this->getInjection('templateFileManager');
@@ -94,15 +98,15 @@ class EmailNotification extends \Espo\Core\Services\Base
 
     public function notifyAboutAssignmentJob($data)
     {
-        if (empty($data['userId'])) return;
-        if (empty($data['assignerUserId'])) return;
-        if (empty($data['entityId'])) return;
-        if (empty($data['entityType'])) return;
+        if (empty($data->userId)) return;
+        if (empty($data->assignerUserId)) return;
+        if (empty($data->entityId)) return;
+        if (empty($data->entityType)) return;
 
-        $userId = $data['userId'];
-        $assignerUserId = $data['assignerUserId'];
-        $entityId = $data['entityId'];
-        $entityType = $data['entityType'];
+        $userId = $data->userId;
+        $assignerUserId = $data->assignerUserId;
+        $entityId = $data->entityId;
+        $entityType = $data->entityType;
 
         $user = $this->getEntityManager()->getEntity('User', $userId);
 
@@ -227,6 +231,8 @@ class EmailNotification extends \Espo\Core\Services\Base
 
     protected function getNotificationSelectParamsNote()
     {
+        $noteNotificationTypeList = $this->getConfig()->get('streamEmailNotificationsTypeList', []);
+
         $selectManager = $this->getInjection('selectManagerFactory')->create('Notification');
 
         $selectParams = $selectManager->getEmptySelectParams();
@@ -236,7 +242,7 @@ class EmailNotification extends \Espo\Core\Services\Base
 
         $selectParams['customJoin'] .= ' JOIN note ON notification.related_id = note.id';
 
-        $selectParams['whereClause']['note.type'] = $this->noteNotificationTypeList;
+        $selectParams['whereClause']['note.type'] = $noteNotificationTypeList;
 
         $entityList = $this->getConfig()->get('streamEmailNotificationsEntityList');
 
@@ -346,7 +352,10 @@ class EmailNotification extends \Espo\Core\Services\Base
 
         $note = $this->getEntityManager()->getEntity('Note', $notification->get('relatedId'));
         if (!$note) return;
-        if (!in_array($note->get('type'), $this->noteNotificationTypeList)) return;
+
+        $noteNotificationTypeList = $this->getConfig()->get('streamEmailNotificationsTypeList', []);
+
+        if (!in_array($note->get('type'), $noteNotificationTypeList)) return;
 
         if (!$notification->get('userId')) return;
         $userId = $notification->get('userId');
@@ -573,6 +582,13 @@ class EmailNotification extends \Espo\Core\Services\Base
     {
         $parentId = $note->get('parentId');
         $parentType = $note->get('parentType');
+
+        $allowedEntityTypeList = $this->getConfig()->get('streamEmailNotificationsEmailReceivedEntityTypeList');
+        if (
+            is_array($allowedEntityTypeList)
+            &&
+            !in_array($parentType, $allowedEntityTypeList)
+        ) return;
 
         $emailAddress = $user->get('emailAddress');
         if (!$emailAddress) return;

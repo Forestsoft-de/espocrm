@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -32,7 +32,7 @@ Espo.define('views/fields/file', 'views/fields/link', function (Dep) {
 
         type: 'file',
 
-        listTemplate: 'fields/file/detail',
+        listTemplate: 'fields/file/list',
 
         detailTemplate: 'fields/file/detail',
 
@@ -51,6 +51,10 @@ Espo.define('views/fields/file', 'views/fields/link', function (Dep) {
         defaultType: false,
 
         previewSize: 'small',
+
+        validations: ['ready', 'required'],
+
+        searchTypeList: ['isNotEmpty', 'isEmpty'],
 
         events: {
             'click a.remove-attachment': function (e) {
@@ -104,16 +108,42 @@ Espo.define('views/fields/file', 'views/fields/link', function (Dep) {
                 data.sourceList = this.sourceList;
             }
 
+            data.valueIsSet = this.model.has(this.idName);
+
             return data;
+        },
+
+        showValidationMessage: function (msg, selector) {
+            var $label = this.$el.find('label');
+            var title = $label.attr('title');
+            $label.attr('title', '');
+            Dep.prototype.showValidationMessage.call(this, msg, selector);
+            $label.attr('title', title);
         },
 
         validateRequired: function () {
             if (this.isRequired()) {
                 if (this.model.get(this.idName) == null) {
                     var msg = this.translate('fieldIsRequired', 'messages').replace('{field}', this.translate(this.name, 'fields', this.model.name));
-                    this.showValidationMessage(msg, '.attachment-button label');
+                    var $target;
+                    if (this.isUploading) {
+                        $target = this.$el.find('.gray-box');
+                    } else {
+                        $target = this.$el.find('.attachment-button label');
+                    }
+
+                    this.showValidationMessage(msg, $target);
                     return true;
                 }
+            }
+        },
+
+        validateReady: function () {
+            if (this.isUploading) {
+                var $target = this.$el.find('.gray-box');
+                var msg = this.translate('fieldIsUploading', 'messages').replace('{field}', this.translate(this.name, 'fields', this.model.name));
+                this.showValidationMessage(msg, $target);
+                return true;
             }
         },
 
@@ -184,6 +214,11 @@ Espo.define('views/fields/file', 'views/fields/link', function (Dep) {
                     e.preventDefault();
                 }.bind(this));
             }
+
+            if (this.mode == 'search') {
+                var type = this.$el.find('select.search-type').val();
+                this.handleSearchType(type);
+            }
         },
 
         getDetailPreview: function (name, type, id) {
@@ -194,7 +229,7 @@ Espo.define('views/fields/file', 'views/fields/link', function (Dep) {
                 case 'image/png':
                 case 'image/jpeg':
                 case 'image/gif':
-                    preview = '<a data-action="showImagePreview" data-id="' + id + '" href="' + this.getImageUrl(id) + '"><img src="'+this.getBasePath()+'?entryPoint=image&size='+this.previewSize+'&id=' + id + '"></a>'; 
+                    preview = '<a data-action="showImagePreview" data-id="' + id + '" href="' + this.getImageUrl(id) + '"><img src="'+this.getBasePath()+'?entryPoint=image&size='+this.previewSize+'&id=' + id + '"></a>';
             }
             return preview;
         },
@@ -283,40 +318,62 @@ Espo.define('views/fields/file', 'views/fields/link', function (Dep) {
         uploadFile: function (file) {
             var isCanceled = false;
 
+            var exceedsMaxFileSize = false;
+
+            var maxFileSize = this.params.maxFileSize || 0;
+            var appMaxUploadSize = this.getHelper().getAppParam('maxUploadSize') || 0;
+            if (!maxFileSize || maxFileSize > appMaxUploadSize) {
+                maxFileSize = appMaxUploadSize;
+            }
+
+            if (maxFileSize) {
+                if (file.size > maxFileSize * 1024 * 1024) {
+                    exceedsMaxFileSize = true;
+                }
+            }
+            if (exceedsMaxFileSize) {
+                var msg = this.translate('fieldMaxFileSizeError', 'messages')
+                          .replace('{field}', this.translate(this.name, 'fields', this.model.name))
+                          .replace('{max}', maxFileSize);
+                this.showValidationMessage(msg, '.attachment-button label');
+                return;
+            }
+
+            this.isUploading = true;
+
             this.getModelFactory().create('Attachment', function (attachment) {
-                var $att = this.addAttachmentBox(file.name, file.type);
+                var $attachmentBox = this.addAttachmentBox(file.name, file.type);
 
                 this.$el.find('.attachment-button').addClass('hidden');
 
-                $att.find('.remove-attachment').on('click.uploading', function () {
+                $attachmentBox.find('.remove-attachment').on('click.uploading', function () {
                     isCanceled = true;
                     this.$el.find('.attachment-button').removeClass('hidden');
+                    this.isUploading = false;
                 }.bind(this));
 
                 var fileReader = new FileReader();
                 fileReader.onload = function (e) {
                     this.handleFileUpload(file, e.target.result, function (result, fileParams) {
-                        $.ajax({
-                            type: 'POST',
-                            url: 'Attachment/action/upload',
-                            data: result,
-                            contentType: 'multipart/encrypted',
-                            timeout: 0,
-                        }).done(function (data) {
-                            attachment.id = data.attachmentId;
-                            attachment.set('name', fileParams.name);
-                            attachment.set('type', fileParams.type || 'text/plain');
-                            attachment.set('size', fileParams.size);
-                            attachment.set('role', 'Attachment');
-                            attachment.set('relatedType', this.model.name);
+                        attachment.set('name', fileParams.name);
+                        attachment.set('type', fileParams.type || 'text/plain');
+                        attachment.set('size', fileParams.size);
+                        attachment.set('role', 'Attachment');
+                        attachment.set('relatedType', this.model.name);
+                        attachment.set('file', result);
+                        attachment.set('field', this.name);
 
-                            attachment.once('sync', function () {
-                                if (!isCanceled) {
-                                    $att.trigger('ready');
-                                    this.setAttachment(attachment);
-                                }
-                            }, this);
-                            attachment.save();
+                        attachment.save().then(function () {
+                            this.isUploading = false;
+                            if (!isCanceled) {
+                                $attachmentBox.trigger('ready');
+                                this.setAttachment(attachment);
+                            }
+                        }.bind(this)).fail(function () {
+                            $attachmentBox.remove();
+                            this.$el.find('.uploading-message').remove();
+                            this.$el.find('.attachment-button').removeClass('hidden');
+                            this.isUploading = false;
                         }.bind(this));
                     }.bind(this));
                 }.bind(this);
@@ -347,10 +404,7 @@ Espo.define('views/fields/file', 'views/fields/link', function (Dep) {
                 preview = this.getEditPreview(name, type, id);
             }
 
-            var $att = $('<div>').css('display', 'inline-block')
-                                 .css('width', '100%')
-                                 .css('max-width', '300px')
-                                 .append(removeLink)
+            var $att = $('<div>').append(removeLink)
                                  .append($('<span class="preview">' + preview + '</span>').css('width', 'cacl(100% - 30px)'))
                                  .addClass('gray-box');
 
@@ -358,7 +412,7 @@ Espo.define('views/fields/file', 'views/fields/link', function (Dep) {
             this.$attachment.append($container);
 
             if (!id) {
-                var $loading = $('<span class="small">' + this.translate('Uploading...') + '</span>');
+                var $loading = $('<span class="small uploading-message">' + this.translate('Uploading...') + '</span>');
                 $container.append($loading);
                 $att.on('ready', function () {
                     $loading.html(self.translate('Ready'));
@@ -439,9 +493,10 @@ Espo.define('views/fields/file', 'views/fields/link', function (Dep) {
         },
 
         fetch: function () {
-            return {};
+            var data = {};
+            data[this.idName] = this.model.get(this.idName);
+            return data;
         }
 
     });
 });
-

@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -32,6 +32,7 @@ namespace Espo\Core;
 use \Espo\Core\Exceptions\Error;
 
 use \Espo\Core\Utils\Util;
+use \Espo\Core\InjectableFactory;
 
 class SelectManagerFactory
 {
@@ -43,7 +44,9 @@ class SelectManagerFactory
 
     private $metadata;
 
-    public function __construct($entityManager, \Espo\Entities\User $user, Acl $acl, AclManager $aclManager, Utils\Metadata $metadata, Utils\Config $config)
+    private $injectableFactory;
+
+    public function __construct($entityManager, \Espo\Entities\User $user, Acl $acl, AclManager $aclManager, Utils\Metadata $metadata, Utils\Config $config, InjectableFactory $injectableFactory)
     {
         $this->entityManager = $entityManager;
         $this->user = $user;
@@ -51,9 +54,10 @@ class SelectManagerFactory
         $this->aclManager = $aclManager;
         $this->metadata = $metadata;
         $this->config = $config;
+        $this->injectableFactory = $injectableFactory;
     }
 
-    public function create($entityType)
+    public function create($entityType, $user = null)
     {
         $normalizedName = Util::normilizeClassName($entityType);
 
@@ -70,7 +74,14 @@ class SelectManagerFactory
             }
         }
 
-        $selectManager = new $className($this->entityManager, $this->user, $this->acl, $this->aclManager, $this->metadata, $this->config);
+        if ($user) {
+            $acl = $this->aclManager->createUserAcl($user);
+        } else {
+            $acl = $this->acl;
+            $user = $this->user;
+        }
+
+        $selectManager = new $className($this->entityManager, $user, $acl, $this->aclManager, $this->metadata, $this->config, $this->injectableFactory);
         $selectManager->setEntityType($entityType);
 
         return $selectManager;

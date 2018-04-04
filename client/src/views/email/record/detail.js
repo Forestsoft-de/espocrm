@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -86,7 +86,7 @@ Espo.define('views/email/record/detail', 'views/record/detail', function (Dep) {
                     'hidden': this.model.get('isImportant')
                 });
                 this.dropdownItemList.push({
-                    'label': 'Mark as Not Important',
+                    'label': 'Unmark Importance',
                     'name': 'markAsNotImportant',
                     'hidden': !this.model.get('isImportant')
                 });
@@ -165,6 +165,9 @@ Espo.define('views/email/record/detail', 'views/record/detail', function (Dep) {
                 Espo.Ui.warning(this.translate('Moved to Trash', 'labels', 'Email'));
             }.bind(this));
             this.model.set('inTrash', true);
+            if (this.model.collection) {
+                this.model.collection.trigger('moving-to-trash', this.model.id);
+            }
         },
 
         actionRetrieveFromTrash: function () {
@@ -178,6 +181,10 @@ Espo.define('views/email/record/detail', 'views/record/detail', function (Dep) {
                 Espo.Ui.warning(this.translate('Retrieved from Trash', 'labels', 'Email'));
             }.bind(this));
             this.model.set('inTrash', false);
+            this.model.set('inTrash', true);
+            if (this.model.collection) {
+                this.model.collection.trigger('retrieving-from-trash', this.model.id);
+            }
         },
 
         actionMoveToFolder: function () {
@@ -279,6 +286,7 @@ Espo.define('views/email/record/detail', 'views/record/detail', function (Dep) {
 
             var afterSend = function () {
                 Espo.Ui.success(this.translate('emailSent', 'messages', 'Email'));
+                model.trigger('after:send');
                 this.trigger('after:send');
             };
 
@@ -314,6 +322,8 @@ Espo.define('views/email/record/detail', 'views/record/detail', function (Dep) {
             }
             this.getRouter().dispatch(this.scope, action, options);
             this.getRouter().navigate(url, {trigger: false});
+
+            return true;
         }
 
     });

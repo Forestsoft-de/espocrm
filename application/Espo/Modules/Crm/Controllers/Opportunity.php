@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -37,53 +37,56 @@ class Opportunity extends \Espo\Core\Controllers\Record
     public function actionReportByLeadSource($params, $data, $request)
     {
         $level = $this->getAcl()->getLevel('Opportunity', 'read');
-        if (!$level || $level == 'own' || $level == 'no') {
+        if (!$level || $level == 'no') {
             throw new Forbidden();
         }
 
         $dateFrom = $request->get('dateFrom');
         $dateTo = $request->get('dateTo');
+        $dateFilter = $request->get('dateFilter');
 
-        return $this->getService('Opportunity')->reportByLeadSource($dateFrom, $dateTo);
+        return $this->getService('Opportunity')->reportByLeadSource($dateFilter, $dateFrom, $dateTo);
     }
 
     public function actionReportByStage($params, $data, $request)
     {
         $level = $this->getAcl()->getLevel('Opportunity', 'read');
-        if (!$level || $level == 'own' || $level == 'no') {
+        if (!$level || $level == 'no') {
             throw new Forbidden();
         }
 
         $dateFrom = $request->get('dateFrom');
         $dateTo = $request->get('dateTo');
+        $dateFilter = $request->get('dateFilter');
 
-        return $this->getService('Opportunity')->reportByStage($dateFrom, $dateTo);
+        return $this->getService('Opportunity')->reportByStage($dateFilter, $dateFrom, $dateTo);
     }
 
     public function actionReportSalesByMonth($params, $data, $request)
     {
         $level = $this->getAcl()->getLevel('Opportunity', 'read');
-        if (!$level || $level == 'own' || $level == 'no') {
+        if (!$level || $level == 'no') {
             throw new Forbidden();
         }
 
         $dateFrom = $request->get('dateFrom');
         $dateTo = $request->get('dateTo');
+        $dateFilter = $request->get('dateFilter');
 
-        return $this->getService('Opportunity')->reportSalesByMonth($dateFrom, $dateTo);
+        return $this->getService('Opportunity')->reportSalesByMonth($dateFilter, $dateFrom, $dateTo);
     }
 
     public function actionReportSalesPipeline($params, $data, $request)
     {
         $level = $this->getAcl()->getLevel('Opportunity', 'read');
-        if (!$level || $level == 'own' || $level == 'no') {
+        if (!$level || $level == 'no') {
             throw new Forbidden();
         }
 
         $dateFrom = $request->get('dateFrom');
         $dateTo = $request->get('dateTo');
+        $dateFilter = $request->get('dateFilter');
 
-        return $this->getService('Opportunity')->reportSalesPipeline($dateFrom, $dateTo);
+        return $this->getService('Opportunity')->reportSalesPipeline($dateFilter, $dateFrom, $dateTo);
     }
 }
-

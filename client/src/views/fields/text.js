@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -46,7 +46,11 @@ Espo.define('views/fields/text', 'views/fields/base', function (Dep) {
 
         seeMoreText: false,
 
-        rowsDefault: 4,
+        rowsDefault: 10,
+
+        rowsMin: 2,
+
+        seeMoreDisabled: false,
 
         searchTypeList: ['contains', 'startsWith', 'equals', 'endsWith', 'like', 'notContains', 'notLike', 'isEmpty', 'isNotEmpty'],
 
@@ -61,6 +65,14 @@ Espo.define('views/fields/text', 'views/fields/base', function (Dep) {
             Dep.prototype.setup.call(this);
             this.params.rows = this.params.rows || this.rowsDefault;
             this.detailMaxLength = this.params.lengthOfCut || this.detailMaxLength;
+
+            this.seeMoreDisabled = this.seeMoreDisabled || this.params.seeMoreDisabled;
+
+            this.autoHeightDisabled = this.options.autoHeightDisabled || this.params.autoHeightDisabled || this.autoHeightDisabled;
+
+            if (this.params.rows < this.rowsMin) {
+                this.rowsMin = this.params.rows;
+            }
         },
 
         setupSearch: function () {
@@ -88,6 +100,14 @@ Espo.define('views/fields/text', 'views/fields/base', function (Dep) {
                     this.searchData.value = this.searchParams.value;
                 }
             }
+            if (this.mode === 'edit') {
+                if (this.autoHeightDisabled) {
+                    data.rows = this.params.rows;
+                } else {
+                    data.rows = this.rowsMin;
+                }
+            }
+            data.valueIsSet = this.model.has(this.name);
             return data;
         },
 
@@ -102,7 +122,7 @@ Espo.define('views/fields/text', 'views/fields/base', function (Dep) {
         getValueForDisplay: function () {
             var text = this.model.get(this.name);
 
-            if (text && (this.mode == 'detail' || this.mode == 'list') && !this.seeMoreText && !this.params.seeMoreDisabled) {
+            if (text && (this.mode == 'detail' || this.mode == 'list') && !this.seeMoreText && !this.seeMoreDisabled) {
                 var maxLength = this.detailMaxLength;
 
                 var isCut = false;
@@ -126,6 +146,30 @@ Espo.define('views/fields/text', 'views/fields/base', function (Dep) {
             return text || '';
         },
 
+        controlTextareaHeight: function (lastHeight) {
+            var scrollHeight = this.$element.prop('scrollHeight');
+            var clientHeight = this.$element.prop('clientHeight');
+
+            if (typeof lastHeight === 'undefined' && clientHeight === 0) {
+                setTimeout(this.controlTextareaHeight.bind(this), 10);
+                return;
+            }
+
+            if (clientHeight === lastHeight) return;
+
+            if (scrollHeight > clientHeight + 1) {
+                var rows = this.$element.prop('rows');
+
+                if (this.params.rows && rows >= this.params.rows) return;
+
+                this.$element.attr('rows', rows + 1);
+                this.controlTextareaHeight(clientHeight);
+            }
+            if (this.$element.val().length === 0) {
+                this.$element.attr('rows', this.rowsMin);
+            }
+        },
+
         afterRender: function () {
             Dep.prototype.afterRender.call(this);
             if (this.mode == 'edit') {
@@ -137,6 +181,13 @@ Espo.define('views/fields/text', 'views/fields/base', function (Dep) {
             if (this.mode == 'search') {
                 var type = this.$el.find('select.search-type').val();
                 this.handleSearchType(type);
+            }
+
+            if (this.mode === 'edit' && !this.autoHeightDisabled) {
+                this.controlTextareaHeight();
+                this.$element.on('input', function () {
+                    this.controlTextareaHeight();
+                }.bind(this));
             }
         },
 

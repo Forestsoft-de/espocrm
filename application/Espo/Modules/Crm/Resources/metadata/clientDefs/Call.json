@@ -14,7 +14,9 @@
                 "name":"attendees",
                 "label":"Attendees",
                 "view":"crm:views/meeting/record/panels/attendees",
-                "sticked": true
+                "sticked": true,
+                "isForm": true,
+                "notRefreshable": true
             }
         ],
         "detailSmall":[
@@ -22,7 +24,9 @@
                 "name":"attendees",
                 "label":"Attendees",
                 "view":"crm:views/meeting/record/panels/attendees",
-                "sticked": true
+                "sticked": true,
+                "isForm": true,
+                "notRefreshable": true
             }
         ],
         "edit":[
@@ -30,7 +34,9 @@
                 "name":"attendees",
                 "label":"Attendees",
                 "view":"crm:views/meeting/record/panels/attendees",
-                "sticked": true
+                "sticked": true,
+                "isForm": true,
+                "notRefreshable": true
             }
         ],
         "editSmall":[
@@ -38,7 +44,9 @@
                 "name":"attendees",
                 "label":"Attendees",
                 "view":"crm:views/meeting/record/panels/attendees",
-                "sticked": true
+                "sticked": true,
+                "isForm": true,
+                "notRefreshable": true
             }
         ]
     },
@@ -84,5 +92,6 @@
                 }
             }
         }
-    }
+    },
+    "iconClass": "glyphicon glyphicon-earphone"
 }

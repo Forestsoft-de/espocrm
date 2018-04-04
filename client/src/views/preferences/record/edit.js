@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -86,6 +86,10 @@ Espo.define('views/preferences/record/edit', 'views/record/edit', function (Dep)
 
         setup: function () {
             Dep.prototype.setup.call(this);
+
+            if (this.model.get('isPortalUser')) {
+                this.layoutName = 'detailPortal';
+            }
 
             if (this.model.id == this.getUser().id) {
                 this.on('after:save', function () {

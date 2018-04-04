@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -49,6 +49,11 @@ class RDB extends \Espo\ORM\Repository
     protected $whereClause = array();
 
     /**
+     * @var array Having clause array.
+     */
+    protected $havingClause = array();
+
+    /**
      * @var array Parameters to be used in further find operations.
      */
     protected $listParams = array();
@@ -89,6 +94,7 @@ class RDB extends \Espo\ORM\Repository
     public function reset()
     {
         $this->whereClause = array();
+        $this->havingClause = array();
         $this->listParams = array();
     }
 
@@ -136,7 +142,9 @@ class RDB extends \Espo\ORM\Repository
 
     public function save(Entity $entity, array $options = array())
     {
-        $this->beforeSave($entity, $options);
+        if (empty($options['skipBeforeSave']) && empty($options['skipAll'])) {
+            $this->beforeSave($entity, $options);
+        }
         if ($entity->isNew() && !$entity->isSaved()) {
             $result = $this->getMapper()->insert($entity);
         } else {
@@ -144,9 +152,13 @@ class RDB extends \Espo\ORM\Repository
         }
         if ($result) {
             $entity->setIsSaved(true);
-            $this->afterSave($entity, $options);
+            if (empty($options['skipAfterSave']) && empty($options['skipAll'])) {
+                $this->afterSave($entity, $options);
+            }
             if ($entity->isNew()) {
-                $entity->setIsNew(false);
+                if (empty($options['keepNew'])) {
+                    $entity->setIsNew(false);
+                }
             } else {
                 if ($entity->isFetched()) {
                     $entity->updateFetchedValues();
@@ -181,7 +193,9 @@ class RDB extends \Espo\ORM\Repository
 
     public function find(array $params = array())
     {
-        $this->handleSelectParams($params);
+        if (empty($params['skipAdditionalSelectParams'])) {
+            $this->handleSelectParams($params);
+        }
         $params = $this->getSelectParams($params);
 
         $dataArr = $this->getMapper()->select($this->seed, $params);
@@ -224,7 +238,9 @@ class RDB extends \Espo\ORM\Repository
         }
 
         if ($entityType) {
-            $this->getEntityManager()->getRepository($entityType)->handleSelectParams($params);
+            if (empty($params['skipAdditionalSelectParams'])) {
+                $this->getEntityManager()->getRepository($entityType)->handleSelectParams($params);
+            }
         }
 
         $result = $this->getMapper()->selectRelated($entity, $relationName, $params);
@@ -244,7 +260,9 @@ class RDB extends \Espo\ORM\Repository
             return;
         }
         $entityType = $entity->relations[$relationName]['entity'];
-        $this->getEntityManager()->getRepository($entityType)->handleSelectParams($params);
+        if (empty($params['skipAdditionalSelectParams'])) {
+            $this->getEntityManager()->getRepository($entityType)->handleSelectParams($params);
+        }
 
         return intval($this->getMapper()->countRelated($entity, $relationName, $params));
     }
@@ -417,7 +435,9 @@ class RDB extends \Espo\ORM\Repository
 
     public function count(array $params = array())
     {
-        $this->handleSelectParams($params);
+        if (empty($params['skipAdditionalSelectParams'])) {
+            $this->handleSelectParams($params);
+        }
 
         $params = $this->getSelectParams($params);
         $count = $this->getMapper()->count($this->seed, $params);
@@ -505,6 +525,19 @@ class RDB extends \Espo\ORM\Repository
         return $this;
     }
 
+    public function having($param1 = array(), $param2 = null)
+    {
+        if (is_array($param1)) {
+            $this->havingClause = $param1 + $this->havingClause;
+        } else {
+            if (!is_null($param2)) {
+                $this->havingClause[$param1] = $param2;
+            }
+        }
+
+        return $this;
+    }
+
     public function order($field = 'id', $direction = "ASC")
     {
         $this->listParams['orderBy'] = $field;
@@ -550,6 +583,11 @@ class RDB extends \Espo\ORM\Repository
         } else {
             $params['whereClause'] = $this->whereClause;
         }
+        if (!empty($params['havingClause'])) {
+            $params['havingClause'] = $params['havingClause'] + $this->havingClause;
+        } else {
+            $params['havingClause'] = $this->havingClause;
+        }
         $params = $params + $this->listParams;
 
         return $params;
@@ -560,4 +598,3 @@ class RDB extends \Espo\ORM\Repository
         return $this->getEntityManager()->getPDO();
     }
 }
-

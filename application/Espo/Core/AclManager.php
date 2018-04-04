@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -46,6 +46,8 @@ class AclManager
     private $tableHashMap = array();
 
     protected $tableClassName = '\\Espo\\Core\\Acl\\Table';
+
+    protected $userAclClassName = '\\Espo\\Core\\Acl';
 
     public function __construct(Container $container)
     {
@@ -279,5 +281,11 @@ class AclManager
     {
         return $this->checkUserPermission($user, $target, 'assignmentPermission');
     }
-}
 
+    public function createUserAcl(User $user)
+    {
+        $className = $this->userAclClassName;
+        $acl = new $className($this, $user);
+        return $acl;
+    }
+}

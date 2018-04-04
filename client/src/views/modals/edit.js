@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -184,12 +184,18 @@ Espo.define('views/modals/edit', 'views/modal', function (Dep) {
                 var model = this.getView('edit').model;
                 attributes = _.extend(attributes, model.getClonedAttributes());
 
+                var options = {
+                    attributes: attributes,
+                    relate: this.options.relate,
+                    returnUrl: this.options.returnUrl || Backbone.history.fragment,
+                    returnDispatchParams: this.options.returnDispatchParams || null,
+                };
+                if (this.options.rootUrl) {
+                    options.rootUrl = this.options.rootUrl;
+                }
+
                 setTimeout(function () {
-                    router.dispatch(this.scope, 'create', {
-                        attributes: attributes,
-                        relate: this.options.relate,
-                        returnUrl: this.options.returnUrl || Backbone.history.fragment,
-                    });
+                    router.dispatch(this.scope, 'create', options);
                     router.navigate(url, {trigger: false});
                 }.bind(this), 10);
             } else {
@@ -199,14 +205,19 @@ Espo.define('views/modals/edit', 'views/modal', function (Dep) {
                 var model = this.getView('edit').model;
                 attributes = _.extend(attributes, model.getClonedAttributes());
 
+                var options = {
+                    attributes: attributes,
+                    returnUrl: this.options.returnUrl || Backbone.history.fragment,
+                    returnDispatchParams: this.options.returnDispatchParams || null,
+                    model: this.sourceModel,
+                    id: this.id
+                };
+                if (this.options.rootUrl) {
+                    options.rootUrl = this.options.rootUrl;
+                }
+
                 setTimeout(function () {
-                    router.dispatch(this.scope, 'edit', {
-                        attributes: attributes,
-                        returnUrl: this.options.returnUrl || Backbone.history.fragment,
-                        returnDispatchParams: this.options.returnDispatchParams || null,
-                        model: this.sourceModel,
-                        id: this.id
-                    });
+                    router.dispatch(this.scope, 'edit', options);
                     router.navigate(url, {trigger: false});
                 }.bind(this), 10);
             }

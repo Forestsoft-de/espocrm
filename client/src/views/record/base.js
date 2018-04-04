@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -253,9 +253,9 @@ Espo.define('views/record/base', ['view', 'view-record-helper', 'dynamic-logic']
 
             this.recordHelper = new ViewRecordHelper();
 
-            this.on('remove', function () {
+            this.once('remove', function () {
                 if (this.isChanged) {
-                    this.model.set(this.attributes);
+                    this.resetModelChanges();
                 }
                 this.setIsNotChanged();
             }, this);
@@ -300,6 +300,17 @@ Espo.define('views/record/base', ['view', 'view-record-helper', 'dynamic-logic']
 
         checkAttributeIsChanged: function (name) {
             return !_.isEqual(this.attributes[name], this.model.get(name));
+        },
+
+        resetModelChanges: function () {
+            var attributes = this.model.attributes;
+            for (var attr in attributes) {
+                if (!(attr in this.attributes)) {
+                    this.model.unset(attr);
+                }
+            }
+
+            this.model.set(this.attributes);
         },
 
         initDynamicLogic: function () {
@@ -391,7 +402,7 @@ Espo.define('views/record/base', ['view', 'view-record-helper', 'dynamic-logic']
             this.notify('Not valid', 'error');
         },
 
-        save: function (callback) {
+        save: function (callback, skipExit) {
             this.beforeBeforeSave();
 
             var data = this.fetch();
@@ -440,6 +451,7 @@ Espo.define('views/record/base', ['view', 'view-record-helper', 'dynamic-logic']
             model.save(attrs, {
                 success: function () {
                     this.afterSave();
+                    var isNew = self.isNew;
                     if (self.isNew) {
                         self.isNew = false;
                     }
@@ -447,7 +459,13 @@ Espo.define('views/record/base', ['view', 'view-record-helper', 'dynamic-logic']
                     model.trigger('after:save');
 
                     if (!callback) {
-                        this.exit('save');
+                        if (!skipExit) {
+                            if (isNew) {
+                                this.exit('create');
+                            } else {
+                                this.exit('save');
+                            }
+                        }
                     } else {
                         callback(this);
                     }
@@ -456,25 +474,28 @@ Espo.define('views/record/base', ['view', 'view-record-helper', 'dynamic-logic']
                     var r = xhr.getAllResponseHeaders();
                     var response = null;
 
-                    if (xhr.status == 409) {
-                        var header = xhr.getResponseHeader('X-Status-Reason');
-                        try {
-                            var response = JSON.parse(header);
-                        } catch (e) {
-                            console.error('Error while parsing response');
+                    if (~[409, 500].indexOf(xhr.status)) {
+                        var statusReasonHeader = xhr.getResponseHeader('X-Status-Reason');
+                        if (statusReasonHeader) {
+                            try {
+                                var response = JSON.parse(statusReasonHeader);
+                            } catch (e) {
+                                console.error('Could not parse X-Status-Reason header');
+                            }
                         }
                     }
 
                     if (xhr.status == 400) {
                         if (!this.isNew) {
-                            this.model.set(this.attributes);
+                            this.resetModelChanges();
                         }
                     }
 
-                    if (response) {
-                        if (response.reason == 'Duplicate') {
+                    if (response && response.reason) {
+                        var methodName = 'errorHandler' + Espo.Utils.upperCaseFirst(response.reason.toString());
+                        if (methodName in this) {
                             xhr.errorIsHandled = true;
-                            self.showDuplicate(response.data);
+                            this[methodName](response.data);
                         }
                     }
 
@@ -513,6 +534,12 @@ Espo.define('views/record/base', ['view', 'view-record-helper', 'dynamic-logic']
                     if (this.getPreferences().get('doNotFillAssignedUserIfNotRequired')) {
                         fillAssignedUser = false;
                         if (this.model.getFieldParam('assignedUser', 'required')) {
+                            fillAssignedUser = true;
+                        } else if (this.getAcl().get('assignmentPermission') === 'no') {
+                            fillAssignedUser = true;
+                        } else if (this.getAcl().get('assignmentPermission') === 'team' && !this.getUser().get('defaultTeamId')) {
+                            fillAssignedUser = true;
+                        } else if (~this.getAcl().getScopeForbiddenFieldList(this.model.name, 'edit').indexOf('assignedUser')) {
                             fillAssignedUser = true;
                         }
                     }
@@ -588,7 +615,7 @@ Espo.define('views/record/base', ['view', 'view-record-helper', 'dynamic-logic']
             this.model.set(defaultHash, {silent: true});
         },
 
-        showDuplicate: function (duplicates) {
+        errorHandlerDuplicate: function (duplicates) {
         },
 
         _handleDependencyAttributes: function () {
@@ -699,7 +726,7 @@ Espo.define('views/record/base', ['view', 'view-record-helper', 'dynamic-logic']
             }
         },
 
-        exit: function () {}
+        exit: function (after) {}
 
     });
 

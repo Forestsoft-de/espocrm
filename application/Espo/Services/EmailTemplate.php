@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -177,10 +177,10 @@ class EmailTemplate extends Record
     {
         $fieldList = array_keys($entity->getAttributes());
 
-        $forbidenAttributeList = $this->getAcl()->getScopeForbiddenAttributeList($entity->getEntityType(), 'read');
+        $forbiddenAttributeList = $this->getAcl()->getScopeForbiddenAttributeList($entity->getEntityType(), 'read');
 
         foreach ($fieldList as $field) {
-            if (in_array($field, $forbidenAttributeList)) continue;
+            if (in_array($field, $forbiddenAttributeList)) continue;
 
             $value = $entity->get($field);
             if (is_object($value)) {

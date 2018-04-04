@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -36,7 +36,10 @@ class CheckInboundEmails extends \Espo\Core\Jobs\Base
     public function run()
     {
         $service = $this->getServiceFactory()->create('InboundEmail');
-        $collection = $this->getEntityManager()->getRepository('InboundEmail')->where(array('status' => 'Active'))->find();
+        $collection = $this->getEntityManager()->getRepository('InboundEmail')->where(array(
+            'status' => 'Active',
+            'useImap' => true
+        ))->find();
         foreach ($collection as $entity) {
             try {
                 $service->fetchFromMailServer($entity);

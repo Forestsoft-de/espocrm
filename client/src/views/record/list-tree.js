@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -72,8 +72,13 @@ Espo.define('views/record/list-tree', 'views/record/list', function (Dep) {
 
             data.showEditLink = this.showEditLink;
 
-            if (this.level == 0 && this.selectable && !(this.selectedData || {}).id) {
+            if (this.level == 0 && this.selectable && (this.selectedData || {}).id === null) {
                 data.rootIsSelected = true;
+            }
+
+            if (this.level == 0 && this.options.hasExpandedToggler) {
+                data.hasExpandedToggler = true;
+                data.isExpanded = this.isExpanded;
             }
 
             return data;
@@ -85,6 +90,8 @@ Espo.define('views/record/list-tree', 'views/record/list', function (Dep) {
             }
 
             this.createDisabled = this.options.createDisabled || this.createDisabled;
+
+            this.isExpanded = this.options.isExpanded;
 
             if ('showRoot' in this.options) {
                 this.showRoot = this.options.showRoot;
@@ -135,6 +142,8 @@ Espo.define('views/record/list-tree', 'views/record/list', function (Dep) {
         setSelected: function (id) {
             if (id === null) {
                 this.selectedData.id = null;
+            } else {
+                this.selectedData.id = id;
             }
             this.rowList.forEach(function (key) {
                 var view = this.getView(key);

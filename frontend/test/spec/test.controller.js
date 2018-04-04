@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -25,42 +25,47 @@
  * In accordance with Section 7(b) of the GNU General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
  ************************************************************************/
-var Espo = Espo || {};
 
-describe("Controller", function () {
+describe('controller', function () {
 	var controller;
 	var viewFactory;
 	var view;
-	
-	beforeEach(function () {
-		viewFactory = {
-			create: {},
-		};
-		view = {
-			render: {},
-			setView: {},
-		};
-				
-		controller = new Espo.Controller({}, {viewFactory: viewFactory});
-		spyOn(viewFactory, 'create').andReturn(view);
-		spyOn(view, 'render');
-		spyOn(view, 'setView');
+
+	var ControllerClass;
+
+	beforeEach(function (done) {
+		require('controller', function (Controller) {
+			ControllerClass = Controller;
+			viewFactory = {
+				create: {}
+			};
+			view = {
+				render: {},
+				setView: {}
+			};
+
+			controller = new Controller({}, {viewFactory: viewFactory});
+			spyOn(viewFactory, 'create').and.returnValue(view);
+			spyOn(view, 'render');
+			spyOn(view, 'setView');
+			done();
+		});
 	});
-	
+
 	it ('#set should set param', function () {
-		controller.set('some', 'test');		
+		controller.set('some', 'test');
 		expect(controller.params['some']).toBe('test');
 	});
-	
+
 	it ('#get should get param', function () {
 		controller.set('some', 'test');
 		expect(controller.get('some')).toBe('test');
-	});	
-	
-	it ("different controllers should use same param set", function () {
-		var someController = new Espo.Controller(controller.params, {viewFactory: viewFactory});		
-		someController.set('some', 'test');		
-		expect(controller.get('some')).toBe(someController.get('some'));		
 	});
-	
+
+	it ("different controllers should use same param set", function () {
+		var someController = new ControllerClass(controller.params, {viewFactory: viewFactory});
+		someController.set('some', 'test');
+		expect(controller.get('some')).toBe(someController.get('some'));
+	});
+
 });

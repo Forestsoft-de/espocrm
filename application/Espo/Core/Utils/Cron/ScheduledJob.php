@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -55,31 +55,17 @@ class ScheduledJob
     }
 
     /**
-     * Get active Scheduler Jobs
+     * Get active Scheduler Job List
      *
-     * @return array
+     * @return EntityCollection
      */
     public function getActiveScheduledJobList()
     {
-        $query = "
-            SELECT * FROM scheduled_job
-            WHERE
-                `status` = 'Active' AND
-                deleted = 0
-        ";
-
-        $pdo = $this->getEntityManager()->getPDO();
-        $sth = $pdo->prepare($query);
-        $sth->execute();
-
-        $rows = $sth->fetchAll(PDO::FETCH_ASSOC);
-
-        $list = array();
-        foreach ($rows as $row) {
-            $list[] = $row;
-        }
-
-        return $list;
+        return $this->getEntityManager()->getRepository('ScheduledJob')->select([
+            'id', 'scheduling', 'job', 'name'
+        ])->where([
+            'status' => 'Active'
+        ])->find();
     }
 
     /**
@@ -105,7 +91,7 @@ class ScheduledJob
         }
 
         $scheduledJob->set('lastRun', $runTime);
-        $entityManager->saveEntity($scheduledJob);
+        $entityManager->saveEntity($scheduledJob, ['silent' => true]);
 
         $scheduledJobLog = $entityManager->getEntity('ScheduledJobLogRecord');
         $scheduledJobLog->set(array(

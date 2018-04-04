@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -30,24 +30,26 @@ Espo.define('views/email-account/record/edit', ['views/record/edit', 'views/emai
 
     return Dep.extend({
 
-        afterRender: function () {
-            Dep.prototype.afterRender.call(this);
+        setup: function () {
+            Dep.prototype.setup.call(this);
 
+            Detail.prototype.setupFieldsBehaviour.call(this);
             Detail.prototype.initSslFieldListening.call(this);
             Detail.prototype.initSmtpFieldsControl.call(this);
 
-            if (Detail.prototype.wasFetched.call(this)) {
-                this.setFieldReadOnly('fetchSince');
-            }
-        },
-
-        setup: function () {
-            Dep.prototype.setup.call(this);
             if (this.getUser().isAdmin()) {
                 this.setFieldNotReadOnly('assignedUser');
             } else {
                 this.setFieldReadOnly('assignedUser');
             }
+        },
+
+        setupFieldsBehaviour: function () {
+            Detail.prototype.setupFieldsBehaviour.call(this);
+        },
+
+        controlStatusField: function () {
+            Detail.prototype.controlStatusField.call(this);
         },
 
         controlSmtpFields: function () {
@@ -56,9 +58,11 @@ Espo.define('views/email-account/record/edit', ['views/record/edit', 'views/emai
 
         controlSmtpAuthField: function () {
             Detail.prototype.controlSmtpAuthField.call(this);
+        },
+
+        wasFetched: function () {
+            Detail.prototype.wasFetched.call(this);
         }
 
     });
-
 });
-

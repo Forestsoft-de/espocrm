@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -38,7 +38,9 @@ Espo.define('views/fields/wysiwyg', ['views/fields/text', 'lib!Summernote'], fun
 
         height: 250,
 
-        rowsDefault: 10,
+        rowsDefault: 15,
+
+        seeMoreDisabled: true,
 
         setup: function () {
             Dep.prototype.setup.call(this);
@@ -94,6 +96,19 @@ Espo.define('views/fields/wysiwyg', ['views/fields/text', 'lib!Summernote'], fun
                     this.$summernote.summernote('destroy');
                 }
             });
+
+            this.once('remove', function () {
+                $(window).off('resize.' + this.cid);
+            }.bind(this));
+        },
+
+        data: function () {
+            var data = Dep.prototype.data.call(this);
+
+            data.useIframe = this.useIframe;
+            data.isPlain = this.model.has('isHtml') && !this.model.get('isHtml');
+
+            return data;
         },
 
         getValueForDisplay: function () {
@@ -137,44 +152,105 @@ Espo.define('views/fields/wysiwyg', ['views/fields/text', 'lib!Summernote'], fun
 
             if (this.mode == 'detail') {
                 if (!this.model.has('isHtml') || this.model.get('isHtml')) {
-                    this.$el.find('iframe').removeClass('hidden');
+                    if (!this.useIframe) {
+                        this.$element = this.$el.find('.html-container');
+                    } else {
+                        this.$el.find('iframe').removeClass('hidden');
 
-                    var $iframe = this.$el.find('iframe');
-                    var iframe = this.iframe = $iframe.get(0);
+                        var $iframe = this.$el.find('iframe');
 
-                    if (!iframe) return;
+                        var iframeElement = this.iframe = $iframe.get(0);
+                        if (!iframeElement) return;
 
-                    $iframe.load(function () {
-                        $iframe.contents().find('a').attr('target', '_blank');
-                    });
-
-                    var doc = iframe.contentWindow.document;
-
-                    var link = '<link href="'+this.getBasePath()+'client/css/iframe.css" rel="stylesheet" type="text/css"></link>';
-
-                    doc.open('text/html', 'replace');
-                    var body = this.sanitizeHtml(this.model.get(this.name) || '');
-                    body += link;
-
-                    doc.write(body);
-                    doc.close();
-
-                    var processHeight = function () {
-                        var $body = $iframe.contents().find('html body');
-                        var height = $body.height();
-                        if (height === 0) {
-                            height = $body.children(0).height() + 100;
-                        }
-                        height += 30;
-                        iframe.style.height = height + 'px';
-                    };
-
-                    setTimeout(function () {
-                        processHeight();
                         $iframe.load(function () {
-                            processHeight();
+                            $iframe.contents().find('a').attr('target', '_blank');
                         });
-                    }, 50);
+
+                        var documentElement = iframeElement.contentWindow.document;
+
+                        var body = this.sanitizeHtml(this.model.get(this.name) || '');
+
+                        var linkElement = iframeElement.contentWindow.document.createElement('link');
+                        linkElement.type = 'text/css';
+                        linkElement.rel = 'stylesheet';
+                        linkElement.href = this.getBasePath() + this.getThemeManager().getIframeStylesheet();
+
+                        body = linkElement.outerHTML + body;
+
+                        documentElement.write(body);
+                        documentElement.close();
+
+                        var $document = $(documentElement);
+
+                        var increaseHeightStep = 10;
+                        var processIncreaseHeight = function (iteration) {
+                            iteration = iteration || 0;
+
+                            if (iteration > 20) {
+                                return;
+                            }
+
+                            iteration ++;
+
+                            if (iframeElement.scrollHeight < $document.height()) {
+                                var height = iframeElement.scrollHeight + increaseHeightStep;
+                                iframeElement.style.height = height + 'px';
+                                processIncreaseHeight(iteration);
+                            }
+                        };
+
+                        var processHeight = function (isOnLoad) {
+                            if (!isOnLoad) {
+                                $iframe.css({
+                                    overflowY: 'hidden',
+                                    overflowX: 'hidden'
+                                });
+                                $iframe.attr('scrolling', 'no');
+
+                                iframeElement.style.height = '0px';
+                            } else {
+                                if (iframeElement.scrollHeight >= $document.height()) {
+                                    return;
+                                }
+                            }
+
+                            var $body = $iframe.contents().find('html body');
+                            var height = $body.height();
+                            if (height === 0) {
+                                height = $body.children(0).height() + 100;
+                            }
+
+                            iframeElement.style.height = height + 'px';
+
+                            processIncreaseHeight();
+
+                            if (!isOnLoad) {
+                                $iframe.css({
+                                    overflowY: 'hidden',
+                                    overflowX: 'scroll'
+                                });
+                                $iframe.attr('scrolling', 'yes');
+                            }
+                        };
+
+                        $iframe.css({
+                            visibility: 'hidden'
+                        });
+                        setTimeout(function () {
+                            processHeight();
+                            $iframe.css({
+                                visibility: 'visible'
+                            });
+                            $iframe.load(function () {
+                                processHeight(true);
+                            });
+                        }, 40);
+
+                        $(window).off('resize.' + this.cid);
+                        $(window).on('resize.' + this.cid, function() {
+                            processHeight();
+                        }.bind(this));
+                    }
 
                 } else {
                     this.$el.find('.plain').removeClass('hidden');
@@ -206,28 +282,23 @@ Espo.define('views/fields/wysiwyg', ['views/fields/text', 'lib!Summernote'], fun
                         this.getModelFactory().create('Attachment', function (attachment) {
                             var fileReader = new FileReader();
                             fileReader.onload = function (e) {
-                                $.ajax({
-                                    type: 'POST',
-                                    url: 'Attachment/action/upload',
-                                    data: e.target.result,
-                                    contentType: 'multipart/encrypted',
-                                }).done(function (data) {
-                                    attachment.id = data.attachmentId;
-                                    attachment.set('name', file.name);
-                                    attachment.set('type', file.type);
-                                    attachment.set('role', 'Inline Attachment');
-                                    attachment.set('global', true);
-                                    attachment.set('size', file.size);
-                                    attachment.once('sync', function () {
-                                        var url = '?entryPoint=attachment&id=' + attachment.id;
-                                        this.$summernote.summernote('insertImage', url);
-                                        this.notify(false);
-                                    }, this);
-                                    attachment.save();
-                                }.bind(this));
+                                attachment.set('name', file.name);
+                                attachment.set('type', file.type);
+                                attachment.set('role', 'Inline Attachment');
+                                attachment.set('global', true);
+                                attachment.set('size', file.size);
+                                attachment.set('relatedType', this.model.name);
+                                attachment.set('file', e.target.result);
+                                attachment.set('field', this.name);
+
+                                attachment.once('sync', function () {
+                                    var url = '?entryPoint=attachment&id=' + attachment.id;
+                                    this.$summernote.summernote('insertImage', url);
+                                    this.notify(false);
+                                }, this);
+                                attachment.save();
                             }.bind(this);
                             fileReader.readAsDataURL(file);
-
                         }, this);
                     }.bind(this),
                     onBlur: function () {

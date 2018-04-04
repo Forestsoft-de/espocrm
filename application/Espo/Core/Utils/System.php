@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -133,5 +133,41 @@ class System
         }
 
         return $version;
+    }
+
+    /**
+     * Pet process ID
+     *
+     * @return integer
+     */
+    public static function getPid()
+    {
+        if (function_exists('getmypid')) {
+            return getmypid();
+        }
+    }
+
+    /**
+     * Check if process is active
+     *
+     * @param  integer  $pid
+     *
+     * @return boolean
+     */
+    public static function isProcessActive($pid)
+    {
+        if (empty($pid)) {
+            return false;
+        }
+
+        if (!function_exists('posix_getsid')) {
+            return false;
+        }
+
+        if (posix_getsid($pid) === false) {
+            return false;
+        }
+
+        return true;
     }
 }

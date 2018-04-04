@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -30,38 +30,38 @@
 $config = $installer->getConfig();
 
 $fields = array(
-	'dateFormat' =>array (
-		'default' => $config->get('dateFormat', ''),
-	),
-	'timeFormat' => array(
-		'default'=> $config->get('timeFormat', ''),
-	),
-	'timeZone' => array(
-		'default'=> $config->get('timeZone', 'UTC'),
-	),
-	'weekStart' => array(
-		'default'=> $config->get('weekStart', 0),
-	),
-	'defaultCurrency' => array(
-		'default' => $config->get('defaultCurrency', 'USD'),
-	),
-	'thousandSeparator' => array(
-		'default' => $config->get('thousandSeparator', ','),
-	),
-	'decimalMark' =>array(
-		'default' => $config->get('decimalMark', '.'),
-	),
-	'language' => array(
-		'default'=> (!empty($_SESSION['install']['user-lang'])) ? $_SESSION['install']['user-lang'] : $config->get('language', 'en_US'),
-	),
+    'dateFormat' =>array (
+        'default' => $config->get('dateFormat', ''),
+    ),
+    'timeFormat' => array(
+        'default'=> $config->get('timeFormat', ''),
+    ),
+    'timeZone' => array(
+        'default'=> $config->get('timeZone', 'UTC'),
+    ),
+    'weekStart' => array(
+        'default'=> $config->get('weekStart', 0),
+    ),
+    'defaultCurrency' => array(
+        'default' => $config->get('defaultCurrency', 'USD'),
+    ),
+    'thousandSeparator' => array(
+        'default' => $config->get('thousandSeparator', ','),
+    ),
+    'decimalMark' =>array(
+        'default' => $config->get('decimalMark', '.'),
+    ),
+    'language' => array(
+        'default'=> (!empty($_SESSION['install']['user-lang'])) ? $_SESSION['install']['user-lang'] : $config->get('language', 'en_US'),
+    ),
 );
 
 foreach ($fields as $fieldName => $field) {
-	if (isset($_SESSION['install'][$fieldName])) {
-		$fields[$fieldName]['value'] = $_SESSION['install'][$fieldName];
-	} else {
-		$fields[$fieldName]['value'] = isset($field['default']) ? $field['default'] : '';
-	}
+    if (isset($_SESSION['install'][$fieldName])) {
+        $fields[$fieldName]['value'] = $_SESSION['install'][$fieldName];
+    } else {
+        $fields[$fieldName]['value'] = isset($field['default']) ? $field['default'] : '';
+    }
 }
 
 $smarty->assign('fields', $fields);

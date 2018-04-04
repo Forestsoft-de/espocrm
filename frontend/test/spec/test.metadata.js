@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -25,30 +25,27 @@
  * In accordance with Section 7(b) of the GNU General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
  ************************************************************************/
-var Espo = Espo || {};
 
-describe("Metadata", function () {
+describe('metadata', function () {
 	var metadata;
 
-	Espo.Metadata.prototype.key = 'test';
-
-	beforeEach(function () {
-		Espo.Metadata.prototype.load = function () {};
-		metadata = new Espo.Metadata();
-		metadata.data = {
-			recordDefs: {
-				Lead: {
-					some: {type: 'varchar'},
+	beforeEach(function (done) {
+		require('metadata', function (Metadata) {
+			metadata = new Metadata();
+			metadata.data = {
+				recordDefs: {
+					Lead: {
+						some: {type: 'varchar'},
+					}
 				}
-			},
-		};
+			};
+			done();
+		});
 	});
 
 	it('#get should work correctly', function () {
 		expect(metadata.get('recordDefs.Lead.some')).toBe(metadata.data.recordDefs.Lead.some);
-
 		expect(metadata.get('recordDefs.Contact')).toBe(null);
 	});
-
 
 });

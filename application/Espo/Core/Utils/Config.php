@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -118,6 +118,32 @@ class Config
     }
 
     /**
+     * Whether parameter is set
+     *
+     * @param string $name
+     * @return bool
+     */
+    public function has($name)
+    {
+        $keys = explode('.', $name);
+
+        $lastBranch = $this->loadConfig();
+        foreach ($keys as $keyName) {
+            if (isset($lastBranch[$keyName]) && (is_array($lastBranch) || is_object($lastBranch))) {
+                if (is_array($lastBranch)) {
+                    $lastBranch = $lastBranch[$keyName];
+                } else {
+                    $lastBranch = $lastBranch->$keyName;
+                }
+            } else {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Set an option to the config
      *
      * @param string $name
@@ -126,6 +152,10 @@ class Config
      */
     public function set($name, $value = null, $dontMarkDirty = false)
     {
+        if (is_object($name)) {
+            $name = get_object_vars($name);
+        }
+
         if (!is_array($name)) {
             $name = array($name => $value);
         }
@@ -251,6 +281,10 @@ class Config
     {
         $restrictItems = $this->getRestrictItems($isAdmin);
 
+        if (is_object($data)) {
+            $data = get_object_vars($data);
+        }
+
         $values = array();
         foreach ($data as $key => $item) {
             if (!in_array($key, $restrictItems)) {
@@ -326,5 +360,3 @@ class Config
         return rtrim($this->get('siteUrl'), '/');
     }
 }
-
-?>

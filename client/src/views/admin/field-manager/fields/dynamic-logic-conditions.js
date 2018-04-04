@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -29,6 +29,8 @@
 Espo.define('views/admin/field-manager/fields/dynamic-logic-conditions', 'views/fields/base', function (Dep) {
 
     return Dep.extend({
+
+        detailTemplate: 'admin/field-manager/fields/dynamic-logic-conditions/detail',
 
         editTemplate: 'admin/field-manager/fields/dynamic-logic-conditions/edit',
 
@@ -79,9 +81,11 @@ Espo.define('views/admin/field-manager/fields/dynamic-logic-conditions', 'views/
 
         fetch: function () {
             var data = {};
-            data[this.name] = this.conditionGroup;
+            data[this.name] = {
+                conditionGroup: this.conditionGroup
+            };
 
-            if (data[this.name].length === 0) {
+            if (this.conditionGroup.length === 0) {
                 data[this.name] = null;
             }
 

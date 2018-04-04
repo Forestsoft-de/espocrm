@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -36,7 +36,7 @@ Espo.define('views/detail', 'views/main', function (Dep) {
 
         name: 'Detail',
 
-        optionsToPass: ['attributes', 'returnUrl', 'returnDispatchParams'],
+        optionsToPass: ['attributes', 'returnUrl', 'returnDispatchParams', 'rootUrl'],
 
         headerView: 'views/header',
 
@@ -103,6 +103,9 @@ Espo.define('views/detail', 'views/main', function (Dep) {
             this.optionsToPass.forEach(function (option) {
                 o[option] = this.options[option];
             }, this);
+            if (this.options.params && this.options.params.rootUrl) {
+                o.rootUrl = this.options.params.rootUrl;
+            }
             this.createView('record', this.getRecordViewName(), o);
         },
 
@@ -160,8 +163,10 @@ Espo.define('views/detail', 'views/main', function (Dep) {
                 name = this.model.id;
             }
 
+            var rootUrl = this.options.rootUrl || this.options.params.rootUrl || '#' + this.scope;
+
             return this.buildHeaderHtml([
-                '<a href="#' + this.scope + '" class="action" data-action="navigateToRoot">' + this.getLanguage().translate(this.scope, 'scopeNamesPlural') + '</a>',
+                '<a href="' + rootUrl + '" class="action" data-action="navigateToRoot">' + this.getLanguage().translate(this.scope, 'scopeNamesPlural') + '</a>',
                 name
             ]);
         },

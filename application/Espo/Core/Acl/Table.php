@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -59,13 +59,9 @@ class Table
 
     protected $fieldLevelList = ['yes', 'no'];
 
-    protected $valuePermissionList = ['assignmentPermission', 'userPermission', 'portalPermission'];
+    protected $valuePermissionHighestLevels = array();
 
-    protected $valuePrtmissionHighestLevels = array(
-        'assignmentPermission' => 'all',
-        'userPermission' => 'all',
-        'portalPermission' => 'yes'
-    );
+    protected $valuePermissionList = [];
 
     private $fileManager;
 
@@ -77,6 +73,8 @@ class Table
 
     protected $forbiddenFieldsCache = array();
 
+    protected $isStrictModeForced = false;
+
     protected $isStrictMode = false;
 
     public function __construct(User $user, Config $config = null, FileManager $fileManager = null, Metadata $metadata = null, FieldManagerUtil $fieldManager = null)
@@ -87,7 +85,11 @@ class Table
             'fieldTableQuickAccess' => (object) [],
         ];
 
-        $this->isStrictMode = $config->get('aclStrictMode', false);
+        if ($this->isStrictModeForced) {
+            $this->isStrictMode = true;
+        } else {
+            $this->isStrictMode = $config->get('aclStrictMode', false);
+        }
 
         $this->user = $user;
 
@@ -104,7 +106,8 @@ class Table
         if ($fileManager) {
             $this->fileManager = $fileManager;
         }
-        $this->valuePermissionList = $this->metadata->get('app.' . $this->type . '.defs.valuePermissionList', $this->valuePermissionList);
+        $this->valuePermissionList = $this->metadata->get(['app', $this->type, 'valuePermissionList'], []);
+        $this->valuePermissionHighestLevels = $this->metadata->get(['app', $this->type, 'valuePermissionHighestLevels'], array());
 
         $this->initCacheFilePath();
 
@@ -207,6 +210,7 @@ class Table
             $this->applyDisabled($aclTable, $fieldTable);
             $this->applyMandatory($aclTable, $fieldTable);
             $this->applyAdditional($aclTable, $fieldTable, $valuePermissionLists);
+            $this->applyReadOnlyFields($fieldTable);
         } else {
             $aclTable = (object) [];
             foreach ($this->getScopeList() as $scope) {
@@ -241,8 +245,12 @@ class Table
         $this->fillFieldTableQuickAccess();
 
         if (!$this->getUser()->isAdmin()) {
+            $permissionsDefaultsGroupName = 'permissionsDefaults';
+            if ($this->isStrictMode) {
+                $permissionsDefaultsGroupName = 'permissionsStrictDefaults';
+            }
             foreach ($this->valuePermissionList as $permission) {
-                $this->data->$permission = $this->mergeValueList($valuePermissionLists->$permission, $this->metadata->get('app.'.$this->type.'.default.' . $permission, 'yes'));
+                $this->data->$permission = $this->mergeValueList($valuePermissionLists->$permission, $this->metadata->get(['app', $this->type, $permissionsDefaultsGroupName, $permission, 'yes']));
                 if ($this->metadata->get('app.'.$this->type.'.mandatory.' . $permission)) {
                     $this->data->$permission = $this->metadata->get('app.'.$this->type.'.mandatory.' . $permission);
                 }
@@ -250,8 +258,8 @@ class Table
 
         } else {
             foreach ($this->valuePermissionList as $permission) {
-                if (isset($this->valuePrtmissionHighestLevels[$permission])) {
-                    $this->data->$permission = $this->valuePrtmissionHighestLevels[$permission];
+                if (isset($this->valuePermissionHighestLevels[$permission])) {
+                    $this->data->$permission = $this->valuePermissionHighestLevels[$permission];
                     continue;
                 }
                 $this->data->$permission = 'all';
@@ -404,7 +412,12 @@ class Table
             return;
         }
 
-        $data = $this->metadata->get('app.'.$this->type.'.default.scopeLevel', array());
+        $defaultsGroupName = 'default';
+        if ($this->isStrictMode) {
+            $defaultsGroupName = 'strictDefault';
+        }
+
+        $data = $this->metadata->get(['app', $this->type, $defaultsGroupName, 'scopeLevel'], []);
 
         foreach ($data as $scope => $item) {
             if (isset($table->$scope)) continue;
@@ -415,7 +428,7 @@ class Table
             $table->$scope = $value;
         }
 
-        $defaultFieldData = $this->metadata->get('app.'.$this->type.'.default.fieldLevel', array());
+        $defaultFieldData = $this->metadata->get(['app', $this->type, $defaultsGroupName, 'fieldLevel'], []);
 
         foreach ($this->getScopeList() as $scope) {
             if (isset($table->$scope) && $table->$scope === false) continue;
@@ -423,7 +436,7 @@ class Table
 
             $fieldList = array_keys($this->getMetadata()->get("entityDefs.{$scope}.fields", []));
 
-            $defaultScopeFieldData = $this->metadata->get('app.'.$this->type.'.default.scopeFieldLevel.' . $scope, array());
+            $defaultScopeFieldData = $this->metadata->get('app.'.$this->type.'.'.$defaultsGroupName.'.scopeFieldLevel.' . $scope, []);
 
             foreach (array_merge($defaultFieldData, $defaultScopeFieldData) as $field => $f) {
                 if (!in_array($field, $fieldList)) continue;
@@ -701,25 +714,29 @@ class Table
     private function buildCache()
     {
         $this->fileManager->putPhpContents($this->cacheFilePath, $this->data, true);
-        /*$contents = '<' . '?'. 'php return ' .  $this->varExport($this->data)  . ';';
-        $this->fileManager->putContents($this->cacheFilePath, $contents);*/
     }
 
-    /*private function varExport($variable)
+    protected function applyReadOnlyFields(&$fieldTable)
     {
-        if ($variable instanceof \StdClass) {
-            $result = '(object) ' . $this->varExport(get_object_vars($variable), true);
-        } else if (is_array($variable)) {
-            $array = array();
-            foreach ($variable as $key => $value) {
-                $array[] = var_export($key, true).' => ' . $this->varExport($value, true);
+        // TODO Enable in 5.4.0
+        return;
+        $scopeList = $this->getScopeWithAclList();
+        foreach ($scopeList as $scope) {
+            if (!property_exists($fieldTable, $scope)) continue;
+            $fieldList = array_keys($this->getMetadata()->get(['entityDefs', $scope, 'fields'], []));
+            foreach ($fieldList as $field) {
+                if ($this->getMetadata()->get(['entityDefs', $scope, 'fields', $field, 'readOnly'])) {
+                    if (property_exists($fieldTable->$scope, $field)) {
+                        $fieldTable->$scope->$field->edit = 'no';
+                    } else {
+                        $fieldTable->$scope->$field = (object) [];
+                        foreach ($this->fieldActionList as $action) {
+                            $fieldTable->$scope->$field->$action = 'yes';
+                        }
+                        $fieldTable->$scope->$field->edit = 'no';
+                    }
+                }
             }
-            $result = '['.implode(', ', $array).']';
-        } else {
-            $result = var_export($variable, true);
         }
-
-        return $result;
-    }*/
+    }
 }
-

@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -35,20 +35,19 @@ use \Espo\Core\Exceptions\BadRequest;
 
 class Document extends \Espo\Core\Controllers\Record
 {
-
     public function postActionGetAttachmentList($params, $data)
     {
-        if (empty($data['id'])) {
+        if (empty($data->id)) {
             throw new BadRequest();
         }
 
-        $id = $data['id'];
+        $id = $data->id;
 
         if (!$this->getAcl()->checkScope('Attachment', 'create')) {
             throw new Forbidden();
         }
 
-        return $this->getRecordService()->getAttachmentList($id)->toArray();
+        return $this->getRecordService()->getAttachmentList($id)->getValueMapList();
     }
 
 }

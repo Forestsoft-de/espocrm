@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -60,21 +60,26 @@ class FieldManager extends \Espo\Core\Controllers\Base
 
     public function postActionCreate($params, $data)
     {
-        if (empty($params['scope']) || empty($data['name'])) {
+        if (empty($params['scope']) || empty($data->name)) {
             throw new BadRequest();
         }
 
         $fieldManager = $this->getContainer()->get('fieldManager');
-        $fieldManager->create($params['scope'], $data['name'], $data);
+        $fieldManager->create($params['scope'], $data->name, get_object_vars($data));
 
         try {
             $this->getContainer()->get('dataManager')->rebuild($params['scope']);
         } catch (Error $e) {
-            $fieldManager->delete($params['scope'], $data['name']);
+            $fieldManager->delete($params['scope'], $data->name);
             throw new Error($e->getMessage());
         }
 
-        return $fieldManager->read($params['scope'], $data['name']);
+        return $fieldManager->read($params['scope'], $data->name);
+    }
+
+    public function patchActionUpdate($params, $data)
+    {
+        return $this->putActionUpdate($params, $data);
     }
 
     public function putActionUpdate($params, $data)
@@ -84,7 +89,7 @@ class FieldManager extends \Espo\Core\Controllers\Base
         }
 
         $fieldManager = $this->getContainer()->get('fieldManager');
-        $fieldManager->update($params['scope'], $params['name'], $data);
+        $fieldManager->update($params['scope'], $params['name'], get_object_vars($data));
 
         if ($fieldManager->isChanged()) {
             $this->getContainer()->get('dataManager')->rebuild($params['scope']);
@@ -110,15 +115,14 @@ class FieldManager extends \Espo\Core\Controllers\Base
 
     public function postActionResetToDefault($params, $data)
     {
-        if (empty($data['scope']) || empty($data['name'])) {
+        if (empty($data->scope) || empty($data->name)) {
             throw new BadRequest();
         }
 
-        $this->getContainer()->get('fieldManager')->resetToDefault($data['scope'], $data['name']);
+        $this->getContainer()->get('fieldManager')->resetToDefault($data->scope, $data->name);
 
         $this->getContainer()->get('dataManager')->rebuildMetadata();
 
         return true;
     }
 }
-

@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -40,6 +40,8 @@ Espo.define('views/fields/link-parent', 'views/fields/base', function (Dep) {
 
         searchTemplate: 'fields/link-parent/search',
 
+        listLinkTemplate: 'fields/link-parent/list-link',
+
         nameName: null,
 
         idName: null,
@@ -57,15 +59,20 @@ Espo.define('views/fields/link-parent', 'views/fields/base', function (Dep) {
         searchTypeList: ['is', 'isEmpty', 'isNotEmpty'],
 
         data: function () {
+            var nameValue = this.model.has(this.nameName) ? this.model.get(this.nameName) : this.model.get(this.idName);
+            if (!nameValue && this.model.get(this.idName) && this.model.get(this.typeName)) {
+                nameValue = this.translate(this.model.get(this.typeName), 'scopeNames');
+            }
             return _.extend({
                 idName: this.idName,
                 nameName: this.nameName,
                 typeName: this.typeName,
                 idValue: this.model.get(this.idName),
-                nameValue: this.model.has(this.nameName) ? this.model.get(this.nameName) : this.model.get(this.idName),
+                nameValue: nameValue,
                 typeValue: this.model.get(this.typeName),
                 foreignScope: this.foreignScope,
                 foreignScopeList: this.foreignScopeList,
+                valueIsSet: this.model.has(this.idName) || this.model.has(this.typeName)
             }, Dep.prototype.data.call(this));
         },
 
@@ -274,7 +281,7 @@ Espo.define('views/fields/link-parent', 'views/fields/base', function (Dep) {
         },
 
         getValueForDisplay: function () {
-            return this.model.get(this.model.get(this.nameName));
+            return this.model.get(this.nameName);
         },
 
         validateRequired: function () {

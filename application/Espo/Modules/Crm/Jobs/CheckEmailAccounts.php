@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -43,11 +43,11 @@ class CheckEmailAccounts extends \Espo\Core\Jobs\Base
         $entity = $this->getEntityManager()->getEntity('EmailAccount', $targetId);
 
         if (!$entity) {
-            throw new Error("Job CheckEmailAccounts '".$targetId."': EmailAccount does not exist.");
+            throw new Error("Job CheckEmailAccounts '".$targetId."': EmailAccount does not exist.", -1);
         };
 
         if ($entity->get('status') !== 'Active') {
-            throw new Error("Job CheckEmailAccounts '".$targetId."': EmailAccount is not active.");
+            throw new Error("Job CheckEmailAccounts '".$targetId."': EmailAccount is not active.", -1);
         }
 
         try {
@@ -58,14 +58,15 @@ class CheckEmailAccounts extends \Espo\Core\Jobs\Base
         return true;
     }
 
-    public function prepare($data, $executeTime)
+    public function prepare($scheduledJob, $executeTime)
     {
         $collection = $this->getEntityManager()->getRepository('EmailAccount')->where(array(
-            'status' => 'Active'
+            'status' => 'Active',
+            'useImap' => true
         ))->find();
         foreach ($collection as $entity) {
             $running = $this->getEntityManager()->getRepository('Job')->where(array(
-                'scheduledJobId' => $data['id'],
+                'scheduledJobId' => $scheduledJob->id,
                 'status' => 'Running',
                 'targetType' => 'EmailAccount',
                 'targetId' => $entity->id
@@ -73,21 +74,18 @@ class CheckEmailAccounts extends \Espo\Core\Jobs\Base
             if ($running) continue;
 
             $countPending = $this->getEntityManager()->getRepository('Job')->where(array(
-                'scheduledJobId' => $data['id'],
+                'scheduledJobId' => $scheduledJob->id,
                 'status' => 'Pending',
                 'targetType' => 'EmailAccount',
                 'targetId' => $entity->id
             ))->count();
             if ($countPending > 1) continue;
 
-            $job = $this->getEntityManager()->getEntity('Job');
-
             $jobEntity = $this->getEntityManager()->getEntity('Job');
             $jobEntity->set(array(
-                'name' => $data['name'],
-                'scheduledJobId' => $data['id'],
+                'name' => $scheduledJob->get('name'),
+                'scheduledJobId' => $scheduledJob->id,
                 'executeTime' => $executeTime,
-                'method' => 'CheckEmailAccounts',
                 'targetType' => 'EmailAccount',
                 'targetId' => $entity->id
             ));
@@ -97,4 +95,3 @@ class CheckEmailAccounts extends \Espo\Core\Jobs\Base
         return true;
     }
 }
-

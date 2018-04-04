@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -32,10 +32,21 @@ Espo.define('crm:views/dashlets/options/activities', 'views/dashlets/options/bas
 
         init: function () {
             Dep.prototype.init.call(this);
-            this.fields.enabledScopeList.options = this.getConfig().get('activitiesEntityList') || [];
+
+            var activitiesEntityList = [];
+            var entityTypeList = [];
+            var activitiesEntityList = Espo.Utils.clone(this.getConfig().get('activitiesEntityList') || []);
+            activitiesEntityList.push('Task');
+
+            activitiesEntityList.forEach(function (item) {
+                if (this.getMetadata().get(['scopes', item, 'disabled'])) return;
+                if (!this.getAcl().checkScope(item)) return;
+
+                entityTypeList.push(item);
+            }, this);
+
+            this.fields.enabledScopeList.options = entityTypeList;
         }
 
     });
 });
-
-

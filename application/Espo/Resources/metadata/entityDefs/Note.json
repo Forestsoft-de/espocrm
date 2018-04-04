@@ -2,7 +2,7 @@
     "fields": {
         "post": {
             "type": "text",
-            "rows": 8
+            "rows": 30
         },
         "data": {
             "type": "jsonObject",
@@ -10,7 +10,9 @@
         },
         "type": {
             "type": "varchar",
-            "readOnly": true
+            "readOnly": true,
+            "view": "views/fields/enum",
+            "options": ["Post"]
         },
         "targetType": {
             "type": "varchar"
@@ -24,7 +26,7 @@
             "readOnly": true
         },
         "attachments": {
-            "type": "linkMultiple",
+            "type": "attachmentMultiple",
             "view": "views/stream/fields/attachment-multiple"
         },
         "number": {
@@ -124,7 +126,6 @@
     },
     "statusStyles": {
         "Lead": {
-            "New" : "primary",
             "Assigned" : "primary",
             "In Process" : "primary",
             "Converted" : "success",
@@ -132,7 +133,6 @@
             "Dead" : "danger"
         },
         "Case": {
-            "New" : "primary",
             "Assigned" : "primary",
             "Pending" : "default",
             "Closed" : "success",
@@ -140,14 +140,8 @@
             "Duplicate" : "danger"
         },
         "Opportunity": {
-            "Prospecting": "primary",
-            "Qualification": "primary",
-            "Needs Analysis": "primary",
-            "Value Proposition": "primary",
-            "Id. Decision Makers": "primary",
-            "Perception Analysis": "primary",
-            "Proposal/Price Quote": "primary",
-            "Negotiation/Review": "primary",
+            "Proposal": "primary",
+            "Negotiation": "primary",
             "Closed Won" : "success",
             "Closed Lost" : "danger"
         },

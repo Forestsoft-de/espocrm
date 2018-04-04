@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -26,7 +26,7 @@
  * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
  ************************************************************************/
 
-Espo.define('views/record/detail-side', 'view', function (Dep) {
+Espo.define('views/record/detail-side', ['view'], function (Dep) {
 
     return Dep.extend({
 
@@ -46,6 +46,7 @@ Espo.define('views/record/detail-side', 'view', function (Dep) {
             name: 'default',
             label: false,
             view: 'views/record/panels/default-side',
+            isForm: true,
             options: {
                 fieldList: [
                     {
@@ -128,6 +129,11 @@ Espo.define('views/record/detail-side', 'view', function (Dep) {
                         return;
                     }
                 }
+                if (p.accessDataList) {
+                    if (!Espo.Utils.checkAccessDataList(p.accessDataList, this.getAcl(), this.getUser())) {
+                        return false;
+                    }
+                }
                 return true;
             }, this);
 
@@ -188,6 +194,8 @@ Espo.define('views/record/detail-side', 'view', function (Dep) {
             var defaultPanelDefs = this.getMetadata().get(['clientDefs', this.scope, 'defaultSidePanel', this.type]);
 
             if (defaultPanelDefs === false) return;
+
+            if (this.getMetadata().get(['clientDefs', this.scope, 'defaultSidePanelDisabled'])) return;
 
             defaultPanelDefs = defaultPanelDefs || this.defaultPanelDefs;
 
@@ -334,4 +342,3 @@ Espo.define('views/record/detail-side', 'view', function (Dep) {
 
     });
 });
-

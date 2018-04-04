@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -40,11 +40,11 @@ class CreateTest extends \tests\integration\Core\BaseTestCase
     {
         $service = $this->getContainer()->get('serviceFactory')->create('Account');
 
-        $entity = $service->createEntity(array(
+        $entity = $service->createEntity((object) [
             'name' => 'Test Account',
             'emailAddress' => 'test@tester.com',
             'phoneNumber' => '123-456-789',
-        ));
+        ]);
 
         $this->assertInstanceOf('\\Espo\\ORM\\Entity', $entity);
         $this->assertTrue(!empty($entity->id));

@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -99,7 +99,7 @@ Espo.define('views/record/list-tree-item', 'view', function (Dep) {
 
             var childCollection = this.model.get('childCollection');
 
-            if (childCollection && childCollection.length == 0) {
+            if ((childCollection && childCollection.length == 0) || this.model.isEnd) {
                 if (this.createDisabled) {
                     this.isEnd = true;
                 }
@@ -126,8 +126,11 @@ Espo.define('views/record/list-tree-item', 'view', function (Dep) {
             var callback = null;
             if (this.isRendered()) {
                 callback = function (view) {
+                    this.listenToOnce(view, 'after:render', function () {
+                        this.trigger('children-created');
+                    }, this);
                     view.render();
-                };
+                }.bind(this);
             }
             this.createView('children', this.listViewName, {
                 collection: childCollection,
@@ -140,7 +143,36 @@ Espo.define('views/record/list-tree-item', 'view', function (Dep) {
             }, callback);
         },
 
+        checkLastChildren: function () {
+            this.ajaxGetRequest(this.collection.name + '/action/lastChildrenIdList', {
+                parentId: this.model.id
+            }).then(function (idList) {
+                var childrenView = this.getView('children');
+                idList.forEach(function (id) {
+                    var model = this.model.get('childCollection').get(id);
+                    if (model) {
+                        model.isEnd = true;
+                    }
+                    var itemView = childrenView.getView(id);
+                    if (!itemView) return;
+                    itemView.isEnd = true;
+                    itemView.afterIsEnd();
+                }, this);
+
+                this.model.lastAreChecked = true;
+            }.bind(this));
+        },
+
         unfold: function () {
+            if (this.createDisabled) {
+                this.once('children-created', function () {
+                    var childrenView = this.getView('children');
+                    if (!this.model.lastAreChecked) {
+                        this.checkLastChildren();
+                    }
+                }, this);
+            }
+
             var childCollection = this.model.get('childCollection');
             if (childCollection !== null) {
                 this.createChildren();

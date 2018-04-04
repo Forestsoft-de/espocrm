@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -48,8 +48,8 @@ class Note extends Record
 
     public function createEntity($data)
     {
-        if (!empty($data['parentType']) && !empty($data['parentId'])) {
-            $entity = $this->getEntityManager()->getEntity($data['parentType'], $data['parentId']);
+        if (!empty($data->parentType) && !empty($data->parentId)) {
+            $entity = $this->getEntityManager()->getEntity($data->parentType, $data->parentId);
             if ($entity) {
                 if (!$this->getAcl()->check($entity, 'read')) {
                     throw new Forbidden();
@@ -60,9 +60,9 @@ class Note extends Record
         return parent::createEntity($data);
     }
 
-    protected function afterCreate(Entity $entity, array $data = array())
+    protected function afterCreateEntity(Entity $entity, $data)
     {
-        parent::afterCreate($entity, $data);
+        parent::afterCreateEntity($entity, $data);
 
         if ($entity->get('type') === 'Post' && $entity->get('parentType') && $entity->get('parentType')) {
             $preferences = $this->getEntityManager()->getEntity('Preferences', $this->getUser()->id);
@@ -77,9 +77,9 @@ class Note extends Record
         }
     }
 
-    protected function beforeCreate(Entity $entity, array $data = array())
+    protected function beforeCreateEntity(Entity $entity, $data)
     {
-        parent::beforeUpdate($entity, $data);
+        parent::beforeCreateEntity($entity, $data);
         $targetType = $entity->get('targetType');
 
         $entity->clear('isGlobal');
@@ -113,16 +113,16 @@ class Note extends Record
         }
     }
 
-    protected function beforeUpdate(Entity $entity, array $data = array())
+    protected function beforeUpdateEntity(Entity $entity, $data)
     {
-        parent::beforeUpdate($entity, $data);
+        parent::beforeUpdateEntity($entity, $data);
+
         $entity->clear('targetType');
         $entity->clear('usersIds');
         $entity->clear('teamsIds');
         $entity->clear('portalsIds');
         $entity->clear('isGlobal');
     }
-
 
     public function checkAssignment(Entity $entity)
     {
@@ -203,7 +203,6 @@ class Note extends Record
         return parant::linkEntity($id, $link, $foreignId);
     }
 
-
     public function unlinkEntity($id, $link, $foreignId)
     {
         if ($link === 'teams' || $link === 'users') {
@@ -211,6 +210,4 @@ class Note extends Record
         }
         return parant::unlinkEntity($id, $link, $foreignId);
     }
-
 }
-

@@ -5,17 +5,19 @@
         },
         "salutationName": {
             "type": "enum",
-            "options": ["", "Mr.", "Mrs.", "Ms.", "Dr."]
+            "options": ["", "Mr.", "Ms.", "Mrs.", "Dr."]
         },
         "firstName": {
             "type": "varchar",
             "maxLength": 100,
-            "default":""
+            "default":"",
+            "trim": true
         },
         "lastName": {
             "type": "varchar",
             "maxLength": 100,
-            "default":""
+            "default":"",
+            "trim": true
         },
         "title": {
             "type": "varchar",
@@ -65,16 +67,20 @@
             "dbType": "varchar"
         },
         "addressCity": {
-            "type": "varchar"
+            "type": "varchar",
+            "trim": true
         },
         "addressState": {
-            "type": "varchar"
+            "type": "varchar",
+            "trim": true
         },
         "addressCountry": {
-            "type": "varchar"
+            "type": "varchar",
+            "trim": true
         },
         "addressPostalCode": {
-            "type": "varchar"
+            "type": "varchar",
+            "trim": true
         },
         "emailAddress": {
             "type": "email"
@@ -118,6 +124,7 @@
         "acceptanceStatus": {
             "type": "varchar",
             "notStorable": true,
+            "exportDisabled": true,
             "disabled": true
         },
         "acceptanceStatusMeetings": {
@@ -126,6 +133,7 @@
             "layoutListDisabled": true,
             "layoutDetailDisabled": true,
             "layoutMassUpdateDisabled": true,
+            "exportDisabled": true,
             "view": "crm:views/lead/fields/acceptance-status",
             "link": "meetings",
             "column": "status"
@@ -136,6 +144,7 @@
             "layoutListDisabled": true,
             "layoutDetailDisabled": true,
             "layoutMassUpdateDisabled": true,
+            "exportDisabled": true,
             "view": "crm:views/lead/fields/acceptance-status",
             "link": "calls",
             "column": "status"

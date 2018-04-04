@@ -300,7 +300,12 @@
         "streamEmailNotificationsEntityList": {
             "type": "multiEnum",
             "translation": "Global.scopeNamesPlural",
-            "view": "views/settings/fields/stream-email-notifications-entity-list"
+            "view": "views/settings/fields/stream-email-notifications-entity-list",
+            "tooltip": true
+        },
+        "streamEmailNotificationsTypeList": {
+            "type": "multiEnum",
+            "options": ["Post", "Status", "EmailReceived"]
         },
         "b2cMode": {
             "type": "bool",
@@ -337,17 +342,21 @@
             "tooltip": true
         },
         "inboundEmailMaxPortionSize": {
-            "type": "int"
+            "type": "int",
+            "min": 1,
+            "max": 500
         },
         "personalEmailMaxPortionSize": {
-            "type": "int"
+            "type": "int",
+            "min": 1,
+            "max": 500
         },
         "maxEmailAccountCount": {
             "type": "int"
         },
         "massEmailMaxPerHourCount": {
             "type": "int",
-            "min": 0
+            "min": 1
         },
         "authTokenLifetime": {
             "type": "float",
@@ -359,6 +368,10 @@
             "type": "float",
             "min": 0,
             "default": 0,
+            "tooltip": true
+        },
+        "authTokenPreventConcurrent": {
+            "type": "bool",
             "tooltip": true
         },
         "dashboardLayout": {
@@ -436,6 +449,13 @@
         },
         "adminNotifications": {
             "type": "bool"
+        },
+        "adminNotificationsNewVersion": {
+            "type": "bool"
+        },
+        "textFilterUseContainsForVarchar": {
+            "type": "bool",
+            "tooltip": true
         }
     }
 }

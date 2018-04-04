@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -31,13 +31,15 @@ Espo.define('views/fields/currency-converted', 'views/fields/currency', function
     return Dep.extend({
 
         data: function () {
-            var currencyValue = this.getConfig().get('baseCurrency');
-            return _.extend({
-                currencyValue: currencyValue,
-                currencySymbol: this.getMetadata().get(['app', 'currency', 'symbolMap', currencyValue]) || ''
-            }, Dep.prototype.data.call(this));
-        },
+            var currencyValue = this.getConfig().get('defaultCurrency');
+
+            var data = Dep.prototype.data.call(this);
+
+            data.currencyValue = currencyValue;
+            data.currencySymbol = this.getMetadata().get(['app', 'currency', 'symbolMap', currencyValue]) || '';
+
+            return data;
+        }
 
     });
 });
-

@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -45,5 +45,18 @@ class Lead extends \Espo\Core\Entities\Person
         }
         return $this->valuesContainer['name'];
     }
-}
 
+    protected function _hasName()
+    {
+        if (array_key_exists('name', $this->valuesContainer)) {
+            return true;
+        }
+        if ($this->has('accountName')) {
+            return true;
+        } else if ($this->has('emailAddress')) {
+            return true;
+        } else if ($this->has('phoneNumber')) {
+            return true;
+        }
+    }
+}

@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -35,57 +35,16 @@ class App extends \Espo\Core\Controllers\Base
 {
     public function actionUser()
     {
-        $preferences = $this->getPreferences()->getValues();
-        unset($preferences['smtpPassword']);
-
-        $user = $this->getUser();
-        if (!$user->has('teamsIds')) {
-            $user->loadLinkMultipleField('teams');
-        }
-        if ($user->get('isPortalUser')) {
-            $user->loadAccountField();
-            $user->loadLinkMultipleField('accounts');
-        }
-
-        $userData = $user->getValues();
-
-        $emailAddressList = [];
-        foreach ($user->get('emailAddresses') as $emailAddress) {
-            if ($emailAddress->get('invalid')) continue;
-            if ($user->get('emailAddrses') === $emailAddress->get('name')) continue;
-            $emailAddressList[] = $emailAddress->get('name');
-        }
-        if ($user->get('emailAddrses')) {
-            array_unshift($emailAddressList, $user->get('emailAddrses'));
-        }
-        $userData['emailAddressList'] = $emailAddressList;
-
-        $settings = (object)[];
-        foreach ($this->getConfig()->get('userItems') as $item) {
-            $settings->$item = $this->getConfig()->get($item);
-        }
-
-        unset($userData['authTokenId']);
-        unset($userData['password']);
-
-        return array(
-            'user' => $userData,
-            'acl' => $this->getAcl()->getMap(),
-            'preferences' => $preferences,
-            'token' => $this->getUser()->get('token'),
-            'settings' => $settings
-        );
+        return $this->getServiceFactory()->create('App')->getUserData();
     }
 
     public function postActionDestroyAuthToken($params, $data)
     {
-        $token = $data['token'];
-        if (empty($token)) {
+        if (empty($data->token)) {
             throw new BadRequest();
         }
 
         $auth = new \Espo\Core\Utils\Auth($this->getContainer());
-        return $auth->destroyAuthToken($token);
+        return $auth->destroyAuthToken($data->token);
     }
 }
-

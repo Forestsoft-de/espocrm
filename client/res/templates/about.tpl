@@ -6,10 +6,9 @@
     <div class="col-md-8">
         <div class="panel panel-default">
             <div class="panel-body">
-            <section>
                 <h5>Version {{version}}</h5>
                 <p>
-                    Copyright &copy; 2014-2017 EspoCRM: Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko.
+                    Copyright &copy; 2014-2018 EspoCRM: Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko.
                     <br>
                     Website: <a href="https://www.espocrm.com" target="_BLANK">www.espocrm.com</a>.
                 </p>
@@ -39,7 +38,6 @@
                     In accordance with Section 7(b) of the GNU General Public License version 3,
                     these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
                 </p>
-            </section>
             </div>
         </div>
 
@@ -70,6 +68,7 @@
                             <li>gridstack.js by Pavel Reznikov</li>
                             <li>vis.js by Almende B.V.</li>
                             <li>Ace</li>
+                            <li>Marked by Christopher Jeffrey</li>
                         </ul>
                         </section>
                     </div>
@@ -81,7 +80,7 @@
                                 <li>Doctrine (DBAL)</li>
                                 <li>Slim</li>
                                 <li>Cron Expression Parser by Michael Dowling</li>
-                                <li>Zendframework (Validator, Mail, Ldap)</li>
+                                <li>Zendframework (Mail, Ldap)</li>
                                 <li>Monolog</li>
                                 <li>Identicon by Don Park</li>
                                 <li>php-semver by Lars Vierbergen</li>

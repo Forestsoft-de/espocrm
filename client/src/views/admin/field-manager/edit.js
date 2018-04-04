@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -95,6 +95,8 @@ Espo.define('views/admin/field-manager/edit', ['view', 'model'], function (Dep, 
                 this.readOnlyControl();
             }, this);
 
+            var hasRequired = false;
+
             this.getModelFactory().create(this.scope, function (model) {
                 if (!this.isNew) {
                     this.type = model.getFieldType(this.field);
@@ -115,7 +117,7 @@ Espo.define('views/admin/field-manager/edit', ['view', 'model'], function (Dep, 
                     }.bind(this))
                 ]).then(function () {
                     this.paramList = [];
-                    var paramList = this.getFieldManager().getParams(this.type) || [];
+                    var paramList = Espo.Utils.clone(this.getFieldManager().getParams(this.type) || []);
 
                     if (!this.isNew) {
                         (this.getMetadata().get(['entityDefs', this.scope, 'fields', this.field, 'fieldManagerAdditionalParamList']) || []).forEach(function (item) {
@@ -125,6 +127,9 @@ Espo.define('views/admin/field-manager/edit', ['view', 'model'], function (Dep, 
 
                     paramList.forEach(function (o) {
                         var item = o.name;
+                        if (item === 'required') {
+                            hasRequired = true;
+                        }
                         var disableParamName = 'customization' + Espo.Utils.upperCaseFirst(item) + 'Disabled';
                         if (this.getMetadata().get('entityDefs.' + this.scope + '.fields.' + this.field + '.' + disableParamName)) {
                             return;
@@ -154,17 +159,7 @@ Espo.define('views/admin/field-manager/edit', ['view', 'model'], function (Dep, 
                         rows: 1
                     });
 
-                    this.paramList.forEach(function (o) {
-                        if (o.hidden) {
-                            return;
-                        }
-                        var options = {};
-                        if (o.tooltip ||  ~this.paramWithTooltipList.indexOf(o.name)) {
-                            options.tooltip = true;
-                            options.tooltipText = this.translate(o.name, 'tooltips', 'FieldManager');
-                        }
-                        this.createFieldView(o.type, o.name, null, o, options);
-                    }, this);
+
 
                     this.hasDynamicLogicPanel = false;
                     if (
@@ -186,6 +181,8 @@ Espo.define('views/admin/field-manager/edit', ['view', 'model'], function (Dep, 
                             !this.getMetadata().get(['entityDefs', this.scope, 'fields', this.field, 'dynamicLogicRequiredDisabled'])
                             &&
                             !this.getMetadata().get(['fields', this.type, 'readOnly'])
+                            &&
+                            hasRequired
                         ) {
                             this.model.set('dynamicLogicRequired', this.getMetadata().get(['clientDefs', this.scope, 'dynamicLogic', 'fields', this.field, 'required']));
                             this.createFieldView(null, 'dynamicLogicRequired', null, {
@@ -220,6 +217,20 @@ Espo.define('views/admin/field-manager/edit', ['view', 'model'], function (Dep, 
                             this.hasDynamicLogicPanel = true;
                         };
                     }
+
+                    this.model.fetchedAttributes = this.model.getClonedAttributes();
+
+                    this.paramList.forEach(function (o) {
+                        if (o.hidden) {
+                            return;
+                        }
+                        var options = {};
+                        if (o.tooltip ||  ~this.paramWithTooltipList.indexOf(o.name)) {
+                            options.tooltip = true;
+                            options.tooltipText = this.translate(o.name, 'tooltips', 'FieldManager');
+                        }
+                        this.createFieldView(o.type, o.name, null, o, options);
+                    }, this);
 
                     callback();
 
@@ -278,7 +289,6 @@ Espo.define('views/admin/field-manager/edit', ['view', 'model'], function (Dep, 
         hideField: function (name) {
             var f = function () {
                 var view = this.getView(name)
-                console.log();
                 if (view) {
                     this.$el.find('.cell[data-name="'+name+'"]').addClass('hidden');
                     view.setDisabled();
@@ -327,7 +337,19 @@ Espo.define('views/admin/field-manager/edit', ['view', 'model'], function (Dep, 
             this.fieldList.push(name);
         },
 
+        disableButtons: function () {
+            this.$el.find('[data-action="save"]').attr('disabled', 'disabled').addClass('disabled');
+            this.$el.find('[data-action="resetToDefault"]').attr('disabled', 'disabled').addClass('disabled');
+        },
+
+        enableButtons: function () {
+            this.$el.find('[data-action="save"]').removeAttr('disabled').removeClass('disabled');
+            this.$el.find('[data-action="resetToDefault"]').removeAttr('disabled').removeClass('disabled');
+        },
+
         save: function () {
+            this.disableButtons();
+
             this.fieldList.forEach(function (field) {
                 var view = this.getView(field);
                 if (!view.readOnly) {
@@ -342,6 +364,8 @@ Espo.define('views/admin/field-manager/edit', ['view', 'model'], function (Dep, 
 
             if (notValid) {
                 this.notify('Not valid', 'error');
+
+                this.enableButtons();
                 return;
             }
 
@@ -353,6 +377,7 @@ Espo.define('views/admin/field-manager/edit', ['view', 'model'], function (Dep, 
 
             this.listenToOnce(this.model, 'sync', function () {
                 Espo.Ui.notify(false);
+                this.enableButtons();
 
                 this.getMetadata().load(function () {
                     this.getMetadata().storeToCache();
@@ -361,10 +386,36 @@ Espo.define('views/admin/field-manager/edit', ['view', 'model'], function (Dep, 
 
                 this.updateLanguage();
 
-            }.bind(this));
+                this.model.fetchedAttributes = this.model.getClonedAttributes();
+            }, this);
 
             this.notify('Saving...');
-            this.model.save();
+
+            if (this.isNew) {
+                this.model.save().error(function () {
+                    this.enableButtons();
+                }.bind(this));
+            } else {
+                var attributes = this.model.getClonedAttributes();
+
+                if (this.model.fetchedAttributes.label === attributes.label) {
+                    delete attributes.label;
+                }
+
+                if (this.model.fetchedAttributes.tooltipText === attributes.tooltipText || !this.model.fetchedAttributes.tooltipText && !attributes.tooltipText) {
+                    delete attributes.tooltipText;
+                }
+
+                if ('translatedOptions' in attributes) {
+                    if (_.isEqual(this.model.fetchedAttributes.translatedOptions, attributes.translatedOptions)) {
+                        delete attributes.translatedOptions;
+                    }
+                }
+
+                this.model.save(attributes, {patch: true}).error(function () {
+                    this.enableButtons();
+                }.bind(this));
+            }
         },
 
         updateLanguage: function () {

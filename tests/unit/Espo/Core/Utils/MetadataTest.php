@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@ namespace tests\unit\Espo\Core\Utils;
 
 use tests\unit\ReflectionHelper;
 
-class MetadataTest extends \PHPUnit_Framework_TestCase
+class MetadataTest extends \PHPUnit\Framework\TestCase
 {
     protected $object;
 
@@ -40,15 +40,20 @@ class MetadataTest extends \PHPUnit_Framework_TestCase
     protected $reflection;
 
     protected $defaultCacheFile = 'tests/unit/testData/Utils/Metadata/metadata.php';
+    protected $defaultObjCacheFile = 'tests/unit/testData/Utils/Metadata/metadata.php';
 
     protected $cacheFile = 'tests/unit/testData/cache/metadata.php';
-    protected $ormCacheFile = 'tests/unit/testData/Utils/Metadata/ormMetadata.php';
+    protected $objCacheFile = 'tests/unit/testData/cache/objMetadata.php';
 
     protected function setUp()
     {
         /*copy defaultCacheFile file to cache*/
         if (!file_exists($this->cacheFile)) {
             copy($this->defaultCacheFile, $this->cacheFile);
+        }
+
+        if (!file_exists($this->objCacheFile)) {
+            copy($this->defaultObjCacheFile, $this->objCacheFile);
         }
 
         $this->objects['fileManager'] = new \Espo\Core\Utils\File\Manager();
@@ -60,10 +65,12 @@ class MetadataTest extends \PHPUnit_Framework_TestCase
 
         $this->reflection = new ReflectionHelper($this->object);
         $this->reflection->setProperty('cacheFile', $this->cacheFile);
+        $this->reflection->setProperty('objCacheFile', $this->objCacheFile);
     }
 
     protected function tearDown()
     {
+        $this->object->clearChanges();
         $this->object = NULL;
     }
 
@@ -229,4 +236,122 @@ class MetadataTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($result, $this->reflection->getProperty('deletedData'));
     }
 
+    public function testGetCustom()
+    {
+        $customPath = 'tests/unit/testData/cache/metadata/custom';
+
+        $paths = $this->reflection->getProperty('paths');
+        $paths['customPath'] = $customPath;
+        $this->reflection->setProperty('paths', $paths);
+
+        $this->assertNull($this->object->getCustom('entityDefs', 'Lead'));
+
+        $customData = $this->object->getCustom('entityDefs', 'Lead', (object) []);
+        $this->assertTrue(is_object($customData));
+
+        $data = (object) [
+          'fields' => (object) [
+            'status' => (object) [
+              "type" => "enum",
+              "options" => ["__APPEND__", "Test1", "Test2"],
+            ],
+          ],
+        ];
+        $this->object->saveCustom('entityDefs', 'Lead', $data);
+
+        $this->assertEquals($data, $this->object->getCustom('entityDefs', 'Lead'));
+
+        unlink($customPath . '/entityDefs/Lead.json');
+    }
+
+    public function testSaveCustom()
+    {
+        $initStatusOptions = $this->object->get('entityDefs.Lead.fields.status.options');
+
+        $customPath = 'tests/unit/testData/cache/metadata/custom';
+
+        $paths = $this->reflection->getProperty('paths');
+        $paths['customPath'] = $customPath;
+        $this->reflection->setProperty('paths', $paths);
+
+        $data = (object) [
+          'fields' => (object) [
+            'status' => (object) [
+              "type" => "enum",
+              "options" => ["__APPEND__", "Test1", "Test2"],
+            ],
+          ],
+        ];
+
+        $this->object->saveCustom('entityDefs', 'Lead', $data);
+
+        $savedFile = $customPath . '/entityDefs/Lead.json';
+        $fileContent = $this->objects['fileManager']->getContents($savedFile);
+        $savedData = \Espo\Core\Utils\Json::decode($fileContent);
+
+        $this->assertEquals($data, $savedData);
+
+        $initStatusOptions[] = 'Test1';
+        $initStatusOptions[] = 'Test2';
+        $this->assertEquals($initStatusOptions, $this->object->get('entityDefs.Lead.fields.status.options'));
+
+        unlink($savedFile);
+    }
+
+    public function testSaveCustom2()
+    {
+        $customPath = 'tests/unit/testData/cache/metadata/custom';
+
+        $paths = $this->reflection->getProperty('paths');
+        $paths['customPath'] = $customPath;
+        $this->reflection->setProperty('paths', $paths);
+
+        $initData = (object) [
+          'fields' => (object) [
+            'status' => (object) [
+              "type" => "enum",
+              "options" => ["__APPEND__", "Test1", "Test2"],
+            ],
+          ],
+        ];
+
+        $this->object->saveCustom('entityDefs', 'Lead', $initData);
+
+        $customData = $this->object->getCustom('entityDefs', 'Lead');
+
+        unset($customData->fields->status->type);
+        $customData->fields->status->options = ["__APPEND__", "Test1"];
+        $this->object->saveCustom('entityDefs', 'Lead', $customData);
+
+        $savedFile = $customPath . '/entityDefs/Lead.json';
+        $fileContent = $this->objects['fileManager']->getContents($savedFile);
+        $savedData = \Espo\Core\Utils\Json::decode($fileContent);
+
+        $expectedData = (object) [
+          'fields' => (object) [
+            'status' => (object) [
+              "options" => ["__APPEND__", "Test1"],
+            ],
+          ],
+        ];
+
+        $this->assertEquals($expectedData, $savedData);
+
+        unlink($savedFile);
+    }
+
+    public function testGetObjects()
+    {
+        $result = 'System';
+        $this->assertEquals($result, $this->object->getObjects('app.adminPanel.system.label'));
+
+        $result = 'fields';
+        $this->assertObjectHasAttribute($result, $this->object->getObjects('entityDefs.User'));
+
+        $result = (object) [
+            'type' => 'bool',
+            'tooltip' => true
+        ];
+        $this->assertEquals($result, $this->object->getObjects('entityDefs.User.fields.isAdmin'));
+    }
 }

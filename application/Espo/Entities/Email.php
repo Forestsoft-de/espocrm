@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -39,6 +39,11 @@ class Email extends \Espo\Core\ORM\Entity
     protected function _setSubject($value)
     {
         $this->set('name', $value);
+    }
+
+    protected function _hasSubject()
+    {
+        return $this->has('name');
     }
 
     protected function _setIsRead($value)
@@ -79,6 +84,8 @@ class Email extends \Espo\Core\ORM\Entity
         $breaks = array("<br />","<br>","<br/>","<br />","&lt;br /&gt;","&lt;br/&gt;","&lt;br&gt;");
         $body = str_ireplace($breaks, "\r\n", $body);
         $body = strip_tags($body);
+        $body = str_ireplace('&nbsp;', ' ', $body);
+
         return $body;
     }
 
@@ -169,5 +176,9 @@ class Email extends \Espo\Core\ORM\Entity
         }
         return [];
     }
-}
 
+    public function setDummyMessageId()
+    {
+        $this->set('messageId', 'dummy:' . \Espo\Core\Utils\Util::generateId());
+    }
+}

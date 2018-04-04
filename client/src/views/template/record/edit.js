@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -57,9 +57,21 @@ Espo.define('views/template/record/edit', 'views/record/edit', function (Dep) {
                         return;
                     }
 
-                    var header = this.getMetadata().get(['entityDefs', 'Template', 'defaultTemplates', entityType, 'header']);
-                    var body = this.getMetadata().get(['entityDefs', 'Template', 'defaultTemplates', entityType, 'body']);
-                    var footer = this.getMetadata().get(['entityDefs', 'Template', 'defaultTemplates', entityType, 'footer']);
+                    var header, body, footer;
+                    if (this.getMetadata().get(['entityDefs', 'Template', 'defaultTemplates', entityType])) {
+                        header = this.getMetadata().get(['entityDefs', 'Template', 'defaultTemplates', entityType, 'header']);
+                        body = this.getMetadata().get(['entityDefs', 'Template', 'defaultTemplates', entityType, 'body']);
+                        footer = this.getMetadata().get(['entityDefs', 'Template', 'defaultTemplates', entityType, 'footer']);
+                    } else {
+                        var scopeType = this.getMetadata().get(['scopes', entityType, 'type']);
+                        if (scopeType) {
+                            if (this.getMetadata().get(['entityDefs', 'Template', 'defaultTemplates', scopeType])) {
+                                header = this.getMetadata().get(['entityDefs', 'Template', 'defaultTemplates', scopeType, 'header']);
+                                body = this.getMetadata().get(['entityDefs', 'Template', 'defaultTemplates', scopeType, 'body']);
+                                footer = this.getMetadata().get(['entityDefs', 'Template', 'defaultTemplates', scopeType, 'footer']);
+                            }
+                        }
+                    }
 
                     if (header) {
                         this.model.set('header', header);

@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -44,6 +44,8 @@ class EntityManager extends \Espo\Core\Controllers\Base
 
     public function actionCreateEntity($params, $data, $request)
     {
+        $data = get_object_vars($data);
+
         if (!$request->isPost()) {
             throw new BadRequest();
         }
@@ -103,6 +105,8 @@ class EntityManager extends \Espo\Core\Controllers\Base
 
     public function actionUpdateEntity($params, $data, $request)
     {
+        $data = get_object_vars($data);
+
         if (!$request->isPost()) {
             throw new BadRequest();
         }
@@ -129,6 +133,8 @@ class EntityManager extends \Espo\Core\Controllers\Base
 
     public function actionRemoveEntity($params, $data, $request)
     {
+        $data = get_object_vars($data);
+
         if (!$request->isPost()) {
             throw new BadRequest();
         }
@@ -160,6 +166,8 @@ class EntityManager extends \Espo\Core\Controllers\Base
 
     public function actionCreateLink($params, $data, $request)
     {
+        $data = get_object_vars($data);
+
         if (!$request->isPost()) {
             throw new BadRequest();
         }
@@ -218,6 +226,8 @@ class EntityManager extends \Espo\Core\Controllers\Base
 
     public function actionUpdateLink($params, $data, $request)
     {
+        $data = get_object_vars($data);
+
         if (!$request->isPost()) {
             throw new BadRequest();
         }
@@ -235,7 +245,9 @@ class EntityManager extends \Espo\Core\Controllers\Base
 
         $params = array();
         foreach ($paramList as $item) {
-        	$params[$item] = filter_var($data[$item], \FILTER_SANITIZE_STRING);
+            if (array_key_exists($item, $data)) {
+                $params[$item] = filter_var($data[$item], \FILTER_SANITIZE_STRING);
+            }
         }
 
         foreach ($additionalParamList as $item) {
@@ -269,6 +281,8 @@ class EntityManager extends \Espo\Core\Controllers\Base
 
     public function actionRemoveLink($params, $data, $request)
     {
+        $data = get_object_vars($data);
+
         if (!$request->isPost()) {
             throw new BadRequest();
         }
@@ -295,20 +309,19 @@ class EntityManager extends \Espo\Core\Controllers\Base
 
     public function postActionFormula($params, $data, $request)
     {
-        if (empty($data['scope'])) {
+        if (empty($data->scope)) {
             throw new BadRequest();
         }
-        if (!array_key_exists('data', $data)) {
+        if (!property_exists($data, 'data')) {
             throw new BadRequest();
         }
 
-        $formulaData = get_object_vars($data['data']);
+        $formulaData = get_object_vars($data->data);
 
-        $this->getContainer()->get('entityManagerUtil')->setFormulaData($data['scope'], $formulaData);
+        $this->getContainer()->get('entityManagerUtil')->setFormulaData($data->scope, $formulaData);
 
         $this->getContainer()->get('dataManager')->clearCache();
 
         return true;
     }
 }
-

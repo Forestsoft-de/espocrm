@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -37,11 +37,22 @@ class Opportunity extends \Espo\Core\ORM\Repositories\RDB
     {
         if ($entity->isNew()) {
             if (!$entity->has('probability') && $entity->get('stage')) {
-                $probability = $this->getMetadata()->get('entityDefs.Opportunity.probabilityMap.' . $entity->get('stage'), 0);
+                $probability = $this->getMetadata()->get('entityDefs.Opportunity.fields.stage.probabilityMap.' . $entity->get('stage'), 0);
                 $entity->set('probability', $probability);
             }
         }
 
         parent::beforeSave($entity, $options);
+    }
+
+    public function afterSave(Entity $entity, array $options = array())
+    {
+        parent::afterSave($entity, $options);
+        if ($entity->isAttributeChanged('amount') || $entity->isAttributeChanged('probability')) {
+            $amountConverted = $entity->get('amountConverted');
+            $probability = $entity->get('probability');
+            $amountWeightedConverted = round($amountConverted * $probability / 100, 2);
+            $entity->set('amountWeightedConverted', $amountWeightedConverted);
+        }
     }
 }

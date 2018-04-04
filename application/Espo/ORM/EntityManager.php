@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -28,6 +28,8 @@
  ************************************************************************/
 
 namespace Espo\ORM;
+
+use \Espo\Core\Exceptions\Error;
 
 class EntityManager
 {
@@ -158,23 +160,31 @@ class EntityManager
 
     public function getEntity($name, $id = null)
     {
+        if (!$this->hasRepository($name)) {
+            throw new Error("ORM: Repository '{$name}' does not exist.");
+        }
+
         return $this->getRepository($name)->get($id);
     }
 
     public function saveEntity(Entity $entity, array $options = array())
     {
-        $entityName = $entity->getEntityName();
-        return $this->getRepository($entityName)->save($entity, $options);
+        $entityType = $entity->getEntityType();
+        return $this->getRepository($entityType)->save($entity, $options);
     }
 
     public function removeEntity(Entity $entity, array $options = array())
     {
-        $entityName = $entity->getEntityName();
-        return $this->getRepository($entityName)->remove($entity, $options);
+        $entityType = $entity->getEntityType();
+        return $this->getRepository($entityType)->remove($entity, $options);
     }
 
     public function getRepository($name)
     {
+        if (!$this->hasRepository($name)) {
+            // TODO Throw error
+        }
+
         if (empty($this->repositoryHash[$name])) {
             $this->repositoryHash[$name] = $this->repositoryFactory->create($name);
         }
@@ -184,6 +194,11 @@ class EntityManager
     public function setMetadata(array $data)
     {
         $this->metadata->setData($data);
+    }
+
+    public function hasRepository($name)
+    {
+        return $this->getMetadata()->has($name);
     }
 
     public function getMetadata()

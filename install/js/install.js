@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -60,10 +60,6 @@ var InstallScript = function(opt) {
 	this.emailSettings = {};
 	this.checkActions = [
 		{
-			'action': 'checkModRewrite',
-			'break': true
-		},
-		{
 			'action': 'checkPermission',
 			'break': true
 		},
@@ -71,14 +67,14 @@ var InstallScript = function(opt) {
 			'action': 'applySett',
 			'break': true
 		},
+        {
+            'action': 'checkModRewrite',
+            'break': true
+        },
 		{
 			'action': 'buildDatabase',
 			'break': true
-		}/*,
-		{
-			'action': 'createUser',
-			'break': true
-		}*/
+		}
 
 	];
 	this.checkIndex = 0;
@@ -422,8 +418,8 @@ InstallScript.prototype.checkSett = function(opt) {
 				if (typeof(errors.phpVersion) !== 'undefined') {
 					msg += self.getLang('phpVersion', 'messages').replace('{minVersion}', errors.phpVersion) + rowDelim;
 				}
-				if (typeof(errors.MySQLVersion) !== 'undefined') {
-					msg += self.getLang('MySQLVersion', 'messages').replace('{minVersion}', errors.MySQLVersion) + rowDelim;
+				if (typeof(errors.mysqlVersion) !== 'undefined') {
+					msg += self.getLang('mysqlVersion', 'messages').replace('{minVersion}', errors.mysqlVersion) + rowDelim;
 				}
 
 				if (typeof(errors.phpRequires) !== 'undefined') {
@@ -566,11 +562,11 @@ InstallScript.prototype.hideMsg = function() {
 }
 
 InstallScript.prototype.showLoading = function() {
-	$('.loading-icon').removeClass('hide');
+	$('.loading-panel').removeClass('hide');
 }
 
 InstallScript.prototype.hideLoading = function() {
-	$('.loading-icon').addClass('hide');
+	$('.loading-panel').addClass('hide');
 }
 
 InstallScript.prototype.checkPass = function(opt) {

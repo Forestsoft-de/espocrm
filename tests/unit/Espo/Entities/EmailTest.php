@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -33,7 +33,7 @@ use tests\unit\ReflectionHelper;
 
 use \Espo\Entities\Email;
 
-class EmailTest extends \PHPUnit_Framework_TestCase
+class EmailTest extends \PHPUnit\Framework\TestCase
 {
     // TODO defs test helper
     protected $defs = array(
@@ -465,6 +465,10 @@ class EmailTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($body, 'test <img src="cid:Id01">');
     }
 
+    function testBodyPlain()
+    {
+        $this->email->set('body', '<br />&nbsp;');
+        $bodyPlain = $this->email->getBodyPlain();
+        $this->assertEquals($bodyPlain, "\r\n ");
+    }
 }
-
-

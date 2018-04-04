@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -265,8 +265,15 @@ Espo.define('crm:views/record/panels/activities', ['views/record/panels/relation
             };
 
             if (this.model.name == 'User') {
-                attributes.assignedUserId = this.model.id;
-                attributes.assignedUserName = this.model.get('name');
+                if (this.model.isPortal()) {
+                    attributes.usersIds = [this.model.id];
+                    var usersIdsNames = {};
+                    usersIdsNames[this.model.id] = this.model.get('name')
+                    attributes.usersIdsNames = usersIdsNames;
+                } else {
+                    attributes.assignedUserId = this.model.id;
+                    attributes.assignedUserName = this.model.get('name');
+                }
             } else {
                 if (this.model.name == 'Contact') {
                     if (this.model.get('accountId')) {

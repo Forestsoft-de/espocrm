@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -41,23 +41,7 @@ Espo.define('views/import/list', 'views/list', function (Dep) {
                 style: 'danger',
                 acl: 'edit'
             });
-        },
-
-        actionCreateEmailAccount: function () {
-            if (this.options.userId) {
-                this.getRouter().dispatch('EmailAccount', 'create', {
-                    attributes: {
-                        assignedUserId: this.options.userId,
-                        assignedUserName: this.options.userId
-                    }
-                });
-                this.getRouter().navigate('#EmailAccount/create', {trigger: false});
-            } else {
-                this.getRouter().navigate('#EmailAccount/create', {trigger: true});
-            }
-        },
-
+        }
 
     });
 });
-

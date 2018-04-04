@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -420,16 +420,20 @@ Espo.define('views/modals/detail', 'views/modal', function (Dep) {
             var model = this.getView('record').model;
             attributes = _.extend(attributes, model.getClonedAttributes());
 
+            var options = {
+                attributes: attributes,
+                returnUrl: Backbone.history.fragment,
+                model: this.sourceModel || this.model,
+                id: this.id
+            };
+            if (this.options.rootUrl) {
+                options.rootUrl = this.options.rootUrl;
+            }
+
             setTimeout(function () {
-                router.dispatch(scope, 'view', {
-                    attributes: attributes,
-                    returnUrl: Backbone.history.fragment,
-                    model: this.sourceModel || this.model,
-                    id: this.id
-                });
+                router.dispatch(scope, 'view', options);
                 router.navigate(url, {trigger: false});
             }.bind(this), 10);
-
 
             this.trigger('leave');
             this.dialog.close();

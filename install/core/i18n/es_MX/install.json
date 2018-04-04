@@ -82,7 +82,7 @@
     "Bad init Permission": "Permiso denegado para directorio \"{*}\". Por favor establecer 775 para \"{*}\" o solo ejecute este comando en la terminal <pre><b>{C}</b></pre>\n\t¿Operacion no permitida? Intenta esta otra: {CSU}",
     "Some errors occurred!": "¡Hubo algún error!",
     "phpVersion": "Su versión de PHP no está soportada por EspoCRM,por favor actualizar  a PHP{minVersion} por lo menos",
-    "MySQLVersion": "Su versión de MySQL no está soportada por EspoCRM,por favor actualizar  a MySQL{minVersion} por lo menos",
+    "mysqlVersion": "Su versión de MySQL no está soportada por EspoCRM,por favor actualizar  a MySQL{minVersion} por lo menos",
     "The PHP extension was not found...": "PHP Error: Extensión <b>{extName}</b> no encontrada.",
     "All Settings correct": "Todas las configuraciones son correctas",
     "Failed to connect to database": "Fallo al conectar a la base de datos",
@@ -115,12 +115,7 @@
     },
     "modRewriteInstruction": {
       "apache": {
-        "windows": "<br> <pre>1. Encontrar el archivo httpd.conf (generalmente lo encontrará en una carpeta llamada conf, config o o algo similar a esas dis líneas)<br>\n2. Dentro del archivo httpd.conf descomentamos la línea LoadModule rewrite_module modules/mod_rewrite.so (eliminar el '#' que está al comienzo de la línea)<br>\n3. También encuentre que la línea ClearModuleList no esté comentada después busque y asegurese que la línea  AddModule mod_rewrite.c no está comentada tampoco.\n</pre>",
-        "linux": "\n <br><br>1. Activar \"mod_rewrite\". Para hacerlo, ejecute estos comandos en un Terminal:<pre>{APACHE1}</pre><br>2. Activar soporte .htaccess. Agregue o modifique la configuración del Server (/etc/apache/apache2.conf, /etc/httpd/conf/httpd.conf):<pre>{APACHE2}</pre>\n Después ejecute este comando en un Terminal:<pre>{APACHE3}</pre><br>3. Trate de agregar la ruta RewriteBase, abra el archivo {API_PATH}.htaccess y reemplace la siguiente línea:<pre>{APACHE4}</pre> Por <pre>{APACHE5}</pre><br> Para más información, siga las instrucciones de <a href=\"https://www.espocrm.com/documentation/administration/apache-server-configuration/\" target=\"_blank\">Apache server configuration for EspoCRM (Configuración de Apache para EspoCRM)</a>.<br><br> "
-      },
-      "nginx": {
-        "linux": "<br>\n<pre>\n{NGINX}\n</pre> <br> Para más información, visite esta guía <a href=\"https://www.espocrm.com/documentation/administration/nginx-server-configuration/\" target=\"_blank\">Configuración del servidor Nginx para EspoCRM (en inglés)</a>.<br><br> ",
-        "windows": "<br>\n<pre>\n{NGINX}\n</pre> <br> Para más información, visite esta guía <a href=\"https://www.espocrm.com/documentation/administration/nginx-server-configuration/\" target=\"_blank\">Configuración del servidor Nginx para EspoCRM (en inglés)</a>.<br><br> "
+        "windows": "<br> <pre>1. Encontrar el archivo httpd.conf (generalmente lo encontrará en una carpeta llamada conf, config o o algo similar a esas dis líneas)<br>\n2. Dentro del archivo httpd.conf descomentamos la línea LoadModule rewrite_module modules/mod_rewrite.so (eliminar el '#' que está al comienzo de la línea)<br>\n3. También encuentre que la línea ClearModuleList no esté comentada después busque y asegurese que la línea  AddModule mod_rewrite.c no está comentada tampoco.\n</pre>"
       }
     },
     "modRewriteTitle": {

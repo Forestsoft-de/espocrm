@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -275,7 +275,8 @@ class Converter
             )
         );
 
-        foreach($entityMetadata['fields'] as $fieldName => $fieldParams) {
+        foreach ($entityMetadata['fields'] as $fieldName => $fieldParams) {
+            if (empty($fieldParams['type'])) continue;
 
             /** check if "fields" option exists in $fieldMeta */
             $fieldTypeMetadata = $this->getMetadataHelper()->getFieldDefsByType($fieldParams);

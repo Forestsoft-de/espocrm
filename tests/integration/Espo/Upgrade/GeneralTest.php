@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -66,7 +66,7 @@ class GeneralTest extends \tests\integration\Core\BaseTestCase
         $this->assertFileExists('data/.backup/upgrades/' . $upgradeId);
 
         $this->assertFileExists('custom/Espo/Custom/test.php');
-        $this->assertFileNotExists('vendor/phpunit');
+        $this->assertFileNotExists('vendor/zendframework');
         $this->assertFileNotExists('extension.php');
         $this->assertFileNotExists('upgrade.php');
 

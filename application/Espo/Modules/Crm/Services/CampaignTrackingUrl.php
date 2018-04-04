@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -34,12 +34,11 @@ use \Espo\ORM\Entity;
 
 class CampaignTrackingUrl extends \Espo\Services\Record
 {
-    protected function beforeCreate(Entity $entity, array $data = array())
+    protected function beforeCreateEntity(Entity $entity, $data)
     {
-        parent::beforeCreate($entity, $data);
+        parent::beforeCreateEntity($entity, $data);
         if (!$this->getAcl()->check($entity, 'edit')) {
             throw new Forbidden();
         }
     }
 }
-

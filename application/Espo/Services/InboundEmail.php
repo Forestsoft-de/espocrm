@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -37,9 +37,9 @@ use \Espo\Core\Exceptions\Forbidden;
 
 class InboundEmail extends \Espo\Services\Record
 {
-    protected $internalAttributeList = ['password'];
+    protected $internalAttributeList = ['password', 'smtpPassword'];
 
-    protected $readOnlyAttributeList= ['fetchData'];
+    protected $readOnlyAttributeList = ['fetchData'];
 
     private $campaignService = null;
 
@@ -80,19 +80,22 @@ class InboundEmail extends \Espo\Services\Record
 
     protected function getMailSender()
     {
-        return $this->injections['mailSender'];
+        return $this->getInjection('mailSender');
     }
 
     protected function getCrypt()
     {
-        return $this->injections['crypt'];
+        return $this->getInjection('crypt');
     }
 
-    protected function handleInput(&$data)
+    protected function handleInput($data)
     {
         parent::handleInput($data);
-        if (array_key_exists('password', $data)) {
-            $data['password'] = $this->getCrypt()->encrypt($data['password']);
+        if (property_exists($data, 'password')) {
+            $data->password = $this->getCrypt()->encrypt($data->password);
+        }
+        if (property_exists($data, 'smtpPassword')) {
+            $data->smtpPassword = $this->getCrypt()->encrypt($data->smtpPassword);
         }
     }
 
@@ -152,8 +155,8 @@ class InboundEmail extends \Espo\Services\Record
 
     public function fetchFromMailServer(Entity $emailAccount)
     {
-        if ($emailAccount->get('status') != 'Active') {
-            throw new Error();
+        if ($emailAccount->get('status') != 'Active' || !$emailAccount->get('useImap')) {
+            throw new Error("Group Email Account {$emailAccount->id} is not active.");
         }
 
         $importer = new \Espo\Core\Mail\Importer($this->getEntityManager(), $this->getConfig());
@@ -233,10 +236,6 @@ class InboundEmail extends \Espo\Services\Record
         }
 
         $parserName = 'MailMimeParser';
-        if (extension_loaded('mailparse')) {
-            $parserName = 'PhpMimeMailParser';
-        }
-
         if ($this->getConfig()->get('emailParser')) {
             $parserName = $this->getConfig()->get('emailParser');
         }
@@ -391,6 +390,7 @@ class InboundEmail extends \Espo\Services\Record
             $email = $importer->importMessage($parserName, $message, $userId, $teamIdList, $userIdList, $filterCollection, $fetchOnlyHeader, $folderData);
         } catch (\Exception $e) {
             $GLOBALS['log']->error('InboundEmail '.$emailAccount->id.' (Import Message w/ '.$parserName.'): [' . $e->getCode() . '] ' .$e->getMessage());
+            $this->getEntityManager()->getPdo()->query('UNLOCK TABLES');
         }
         return $email;
     }
@@ -549,15 +549,15 @@ class InboundEmail extends \Espo\Services\Record
             $case->set('accountId', $email->get('accountId'));
         }
 
-        $contact = $this->getEntityManager()->getRepository('Contact')->where(array(
-            'emailAddresses.id' => $email->get('fromEmailAddressId')
+        $contact = $this->getEntityManager()->getRepository('Contact')->join([['emailAddresses', 'emailAddressesMultiple']])->where(array(
+            'emailAddressesMultiple.id' => $email->get('fromEmailAddressId')
         ))->findOne();
         if ($contact) {
             $case->set('contactId', $contact->id);
         } else {
             if (!$case->get('accountId')) {
-                $lead = $this->getEntityManager()->getRepository('Lead')->where(array(
-                    'emailAddresses.id' => $email->get('fromEmailAddressId')
+                $lead = $this->getEntityManager()->getRepository('Lead')->join([['emailAddresses', 'emailAddressesMultiple']])->where(array(
+                    'emailAddressesMultiple.id' => $email->get('fromEmailAddressId')
                 ))->findOne();
                 if ($lead) {
                     $case->set('leadId', $lead->id);
@@ -651,7 +651,17 @@ class InboundEmail extends \Espo\Services\Record
                 $this->getEntityManager()->saveEntity($reply);
 
                 $sender = $this->getMailSender()->useGlobal();
+
+                if ($inboundEmail->get('useSmtp')) {
+                    $smtpParams = $this->getSmtpParamsFromInboundEmail($inboundEmail);
+                    if ($smtpParams) {
+                        $sender->useSmtp($smtpParams);
+                    }
+                }
                 $senderParams = array();
+                if ($inboundEmail->get('fromName')) {
+                    $senderParams['fromName'] = $inboundEmail->get('fromName');
+                }
                 if ($inboundEmail->get('replyFromAddress')) {
                     $senderParams['fromAddress'] = $inboundEmail->get('replyFromAddress');
                 }
@@ -669,6 +679,24 @@ class InboundEmail extends \Espo\Services\Record
             }
 
         } catch (\Exception $e) {}
+    }
+
+    protected function getSmtpParamsFromInboundEmail(\Espo\Entities\InboundEmail $emailAccount)
+    {
+        $smtpParams = array();
+        $smtpParams['server'] = $emailAccount->get('smtpHost');
+        if ($smtpParams['server']) {
+            $smtpParams['port'] = $emailAccount->get('smtpPort');
+            $smtpParams['auth'] = $emailAccount->get('smtpAuth');
+            $smtpParams['security'] = $emailAccount->get('smtpSecurity');
+            $smtpParams['username'] = $emailAccount->get('smtpUsername');
+            $smtpParams['password'] = $emailAccount->get('smtpPassword');
+            if (array_key_exists('password', $smtpParams)) {
+                $smtpParams['password'] = $this->getCrypt()->decrypt($smtpParams['password']);
+            }
+            return $smtpParams;
+        }
+        return;
     }
 
     protected function processBouncedMessage($message)
@@ -721,5 +749,91 @@ class InboundEmail extends \Espo\Services\Record
         return $this->campaignService;
     }
 
-}
+    public function findSharedAccountForUser(\Espo\Entities\User $user, $emailAddress)
+    {
+        $groupEmailAccountPermission = $this->getAclManager()->get($user, 'groupEmailAccountPermission');
+        $teamIdList = $user->getLinkMultipleIdList('teams');
 
+        $inboundEmail = null;
+
+        $groupEmailAccountPermission = $this->getAcl()->get('groupEmailAccountPermission');
+        if ($groupEmailAccountPermission && $groupEmailAccountPermission !== 'no') {
+            if ($groupEmailAccountPermission === 'team') {
+                if (!count($teamIdList)) return;
+                $selectParams = [
+                    'whereClause' => [
+                        'status' => 'Active',
+                        'useSmtp' => true,
+                        'smtpIsShared' => true,
+                        'teamsMiddle.teamId' => $teamIdList,
+                        'emailAddress' => $emailAddress
+                    ],
+                    'joins' => ['teams'],
+                    'distinct' => true
+                ];
+            } else if ($groupEmailAccountPermission === 'all') {
+                $selectParams = [
+                    'whereClause' => [
+                        'status' => 'Active',
+                        'useSmtp' => true,
+                        'smtpIsShared' => true,
+                        'emailAddress' => $emailAddress
+                    ]
+                ];
+            }
+            $inboundEmail = $this->getEntityManager()->getRepository('InboundEmail')->findOne($selectParams);
+
+        }
+        return $inboundEmail;
+    }
+
+    protected function getStorage(\Espo\Entities\InboundEmail $emailAccount)
+    {
+        $imapParams = array(
+            'host' => $emailAccount->get('host'),
+            'port' => $emailAccount->get('port'),
+            'user' => $emailAccount->get('username'),
+            'password' => $this->getCrypt()->decrypt($emailAccount->get('password')),
+        );
+
+        if ($emailAccount->get('ssl')) {
+            $imapParams['ssl'] = 'SSL';
+        }
+
+        $storage = new \Espo\Core\Mail\Mail\Storage\Imap($imapParams);
+
+        return $storage;
+    }
+
+    public function storeSentMessage(\Espo\Entities\InboundEmail $emailAccount, $message)
+    {
+        $storage = $this->getStorage($emailAccount);
+
+        $folder = $emailAccount->get('sentFolder');
+        if (empty($folder)) {
+            throw new Error("No sent folder for Email Account: " . $emailAccount->id . ".");
+        }
+        $storage->appendMessage($message->toString(), $folder);
+    }
+
+    public function getSmtpParamsFromAccount(\Espo\Entities\InboundEmail $emailAccount)
+    {
+        $smtpParams = array();
+        $smtpParams['server'] = $emailAccount->get('smtpHost');
+        if ($smtpParams['server']) {
+            $smtpParams['port'] = $emailAccount->get('smtpPort');
+            $smtpParams['auth'] = $emailAccount->get('smtpAuth');
+            $smtpParams['security'] = $emailAccount->get('smtpSecurity');
+            $smtpParams['username'] = $emailAccount->get('smtpUsername');
+            $smtpParams['password'] = $emailAccount->get('smtpPassword');
+            if ($emailAccount->get('fromName')) {
+                $smtpParams['fromName'] = $emailAccount->get('fromName');
+            }
+            if (array_key_exists('password', $smtpParams)) {
+                $smtpParams['password'] = $this->getCrypt()->decrypt($smtpParams['password']);
+            }
+            return $smtpParams;
+        }
+        return;
+    }
+}

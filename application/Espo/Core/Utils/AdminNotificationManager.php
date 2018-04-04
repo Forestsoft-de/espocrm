@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -69,7 +69,7 @@ class AdminNotificationManager
             return [];
         }
 
-        if (!$this->getConfig()->get('adminNotificationCronIsNotConfiguredDisabled')) {
+        if ($this->getConfig()->get('adminNotificationsCronIsNotConfigured')) {
             if (!$this->isCronConfigured()) {
                 $notificationList[] = array(
                     'id' => 'cronIsNotConfigured',
@@ -79,7 +79,7 @@ class AdminNotificationManager
             }
         }
 
-        if (!$this->getConfig()->get('adminNotificationNewVersionIsAvailableDisabled')) {
+        if ($this->getConfig()->get('adminNotificationsNewVersion')) {
             $instanceNeedingUpgrade = $this->getInstanceNeedingUpgrade();
             if (!empty($instanceNeedingUpgrade)) {
                 $message = $this->getLanguage()->translate('newVersionIsAvailable', 'messages', 'Admin');
@@ -91,7 +91,7 @@ class AdminNotificationManager
             }
         }
 
-        if (!$this->getConfig()->get('adminNotificationNewExtensionVersionIsAvailableDisabled')) {
+        if ($this->getConfig()->get('adminNotificationsNewExtensionVersion')) {
             $extensionsNeedingUpgrade = $this->getExtensionsNeedingUpgrade();
             if (!empty($extensionsNeedingUpgrade)) {
                 foreach ($extensionsNeedingUpgrade as $extensionName => $extensionDetails) {
@@ -117,9 +117,10 @@ class AdminNotificationManager
     {
         $config = $this->getConfig();
 
-        $latestVersion = $config->get('latestAvailableVersion');
+        $latestVersion = $config->get('latestVersion');
         if (isset($latestVersion)) {
             $currentVersion = $config->get('version');
+            if ($currentVersion === 'dev') return;
             if (version_compare($latestVersion, $currentVersion, '>')) {
                 return array(
                     'currentVersion' => $currentVersion,
@@ -135,9 +136,9 @@ class AdminNotificationManager
 
         $extensions = [];
 
-        $latestAvailableExtensionsVersions = $config->get('latestAvailableExtensionsVersions');
-        if (!empty($latestAvailableExtensionsVersions) && is_array($latestAvailableExtensionsVersions)) {
-            foreach ($latestAvailableExtensionsVersions as $extensionName => $extensionLatestVersion) {
+        $latestExtensionVersions = $config->get('latestExtensionVersions');
+        if (!empty($latestExtensionVersions) && is_array($latestExtensionVersions)) {
+            foreach ($latestExtensionVersions as $extensionName => $extensionLatestVersion) {
                 $currentVersion = $this->getExtensionLatestInstalledVersion($extensionName);
                 if (isset($currentVersion) && version_compare($extensionLatestVersion, $currentVersion, '>')) {
                     $extensions[$extensionName] = array(
@@ -158,8 +159,8 @@ class AdminNotificationManager
 
         $query = "
             SELECT version FROM extension
-            WHERE name='". $extensionName ."'
-            AND deleted=0
+            WHERE name = ". $pdo->quote($extensionName) ."
+            AND deleted = 0
             AND is_installed = 1
             ORDER BY created_at DESC
         ";
@@ -186,11 +187,10 @@ class AdminNotificationManager
         $notification->set(array(
             'type' => 'message',
             'data' => array(
-                'userId' => $this->getUser()->id,
-                'userName' => $this->getUser()->get('name')
+                'userId' => $userId,
             ),
-            'userId' => $user->id,
-            'message' => $actionData['messageTemplate']
+            'userId' => $userId,
+            'message' => $message
         ));
         $this->getEntityManager()->saveEntity($notification);
     }

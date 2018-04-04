@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -48,6 +48,10 @@ class Layout extends \Espo\Core\Controllers\Base
 
     public function actionUpdate($params, $data, $request)
     {
+        if (is_object($data)) {
+            $data = get_object_vars($data);
+        }
+
         if (!$this->getUser()->isAdmin()) {
             throw new Forbidden();
         }
@@ -79,10 +83,10 @@ class Layout extends \Espo\Core\Controllers\Base
         if (!$request->isPost()) {
             throw new BadRequest();
         }
-        if (empty($data['scope']) || empty($data['name'])) {
+        if (empty($data->scope) || empty($data->name)) {
             throw new BadRequest();
         }
 
-        return $this->getContainer()->get('layout')->resetToDefault($data['scope'], $data['name']);
+        return $this->getContainer()->get('layout')->resetToDefault($data->scope, $data->name);
     }
 }

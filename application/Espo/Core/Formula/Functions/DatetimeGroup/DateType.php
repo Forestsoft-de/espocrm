@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -54,10 +54,15 @@ class DateType extends \Espo\Core\Formula\Functions\Base
 
         $value = $this->evaluate($item->value[0]);
 
+        $timezone = null;
+        if (count($item->value) > 1) {
+             $timezone = $this->evaluate($item->value[1]);
+        }
+
         if (empty($value)) return 0;
 
         if (strlen($value) > 11) {
-            $resultString = $this->getInjection('dateTime')->convertSystemDateTime($value, null, 'D');
+            $resultString = $this->getInjection('dateTime')->convertSystemDateTime($value, $timezone, 'D');
         } else {
             $resultString = $this->getInjection('dateTime')->convertSystemDate($value, 'D');
         }

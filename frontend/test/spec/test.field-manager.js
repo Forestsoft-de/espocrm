@@ -2,7 +2,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -25,11 +25,10 @@
  * In accordance with Section 7(b) of the GNU General Public License version 3,
  * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
  ************************************************************************/
-var Espo = Espo || {};
 
-describe("FieldManager", function () {
+describe('field-manager', function () {
 	var fieldManager;
-	
+
 	var defs = {
 				'varchar': {
 					'params': [
@@ -156,7 +155,7 @@ describe("FieldManager", function () {
 						}
 					},
 					'naming': 'prefix',
-					'mergable': false,
+					'notMergeable': true,
 				},
 				'address': {
 					'actualFields': ['street', 'city', 'state', 'country', 'postalCode'],
@@ -177,35 +176,35 @@ describe("FieldManager", function () {
 							'type': 'varchar'
 						},
 					},
-					'mergable': false,
-				},
+					'notMergeable': true
+				}
 	};
-	
-	
-	
-	beforeEach(function () {	
-		fieldManager = new Espo.FieldManager(defs);
-	});	
-	
+
+	beforeEach(function (done) {
+		require(['field-manager', 'utils'], function (FieldManager) {
+			fieldManager = new FieldManager(defs);
+			done();
+		});
+	});
+
 	it ('#isMergable should work correctly', function () {
-		expect(fieldManager.isMergable('address')).toBe(false);
-		expect(fieldManager.isMergable('link')).toBe(true);	
+		expect(fieldManager.isMergeable('address')).toBe(false);
+		expect(fieldManager.isMergeable('link')).toBe(true);
 	});
-	
-	it ('#getActualAttributes should work correctly', function () {
-		var fields = fieldManager.getActualAttributes('address', 'billingAddress');
+
+	it ('#getActualAttributeList should work correctly', function () {
+		var fields = fieldManager.getActualAttributeList('address', 'billingAddress');
 		expect(fields[0]).toBe('billingAddressStreet');
-		
-		var fields = fieldManager.getActualAttributes('personName', 'name');
+
+		var fields = fieldManager.getActualAttributeList('personName', 'name');
 		expect(fields[2]).toBe('lastName');
-		
-		var fields = fieldManager.getActualAttributes('link', 'account');
+
+		var fields = fieldManager.getActualAttributeList('link', 'account');
 		expect(fields[0]).toBe('accountId');
-		
-		var fields = fieldManager.getActualAttributes('varchar', 'name');
-		expect(fields[0]).toBe('name');		
+
+		var fields = fieldManager.getActualAttributeList('varchar', 'name');
+		expect(fields[0]).toBe('name');
 	});
-	
 
 
 });

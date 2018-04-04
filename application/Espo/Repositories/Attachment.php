@@ -3,7 +3,7 @@
  * This file is part of EspoCRM.
  *
  * EspoCRM - Open Source CRM application.
- * Copyright (C) 2014-2017 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
+ * Copyright (C) 2014-2018 Yuri Kuznetsov, Taras Machyshyn, Oleksiy Avramenko
  * Website: http://www.espocrm.com
  *
  * EspoCRM is free software: you can redistribute it and/or modify
@@ -36,13 +36,13 @@ class Attachment extends \Espo\Core\ORM\Repositories\RDB
     protected function init()
     {
         parent::init();
-        $this->addDependency('fileStorageManager');
+        $this->addDependency('container');
         $this->addDependency('config');
     }
 
     protected function getFileStorageManager()
     {
-        return $this->getInjection('fileStorageManager');
+        return $this->getInjection('container')->get('fileStorageManager');
     }
 
     protected function getConfig()
@@ -61,7 +61,7 @@ class Attachment extends \Espo\Core\ORM\Repositories\RDB
 
         if ($entity->isNew()) {
             if (!$entity->has('size') && $entity->has('contents')) {
-                $entity->set('size', mb_strlen($entity->has('contents')));
+                $entity->set('size', mb_strlen($entity->get('contents')));
             }
         }
     }
@@ -74,7 +74,10 @@ class Attachment extends \Espo\Core\ORM\Repositories\RDB
         if ($isNew) {
             if (!empty($entity->id) && $entity->has('contents')) {
                 $contents = $entity->get('contents');
-                $this->getFileStorageManager()->putContents($entity, $contents);
+                $storeResult = $this->getFileStorageManager()->putContents($entity, $contents);
+                if ($storeResult === false) {
+                    throw new \Espo\Core\Exceptions\Error("Could not store the file");
+                }
             }
         }
 
@@ -95,7 +98,8 @@ class Attachment extends \Espo\Core\ORM\Repositories\RDB
             'sourceId' => $entity->getSourceId(),
             'name' => $entity->get('name'),
             'type' => $entity->get('type'),
-            'size' => $entity->get('size')
+            'size' => $entity->get('size'),
+            'role' => $entity->get('role')
         ));
 
         if ($role) {

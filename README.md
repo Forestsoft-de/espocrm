@@ -8,10 +8,14 @@ Download the latest release from our [website](http://www.espocrm.com).
 
 ### Requirements
 
-* PHP 5.5 or above (with pdo, json, gd, mcrypt extensions);
-* MySQL 5.1 or above.
+* PHP 5.6 or above (with pdo, json, gd, openssl, zip, imap, mbstring, curl extensions);
+* MySQL 5.5.3 or above.
 
-For more information about server configuration see [this article](http://blog.espocrm.com/administration/server-configuration-for-espocrm/).
+For more information about server configuration see [this article](https://www.espocrm.com/documentation/administration/server-configuration/).
+
+### Documentation
+
+Documentation for administrators, users and developers is available [here](https://www.espocrm.com/documentation/).
 
 ### How to report bug
 
